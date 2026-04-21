@@ -1,0 +1,26 @@
+# Ignore build outputs
+build/
+Debug/
+Release/
+*.o
+*.d
+*.lst
+*.map
+*.bin
+*.hex
+*.elf
+
+# Ignore IDE files
+.vscode/
+.settings/
+.cproject
+.project
+
+# Ignore CubeMX garbage
+.mxproject
+mx.scratch
+*.orig
+
+# Ignore OS junk
+.DS_Store
+Thumbs.db
