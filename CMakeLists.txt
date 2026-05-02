@@ -19,7 +19,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Set the project name
-set(CMAKE_PROJECT_NAME blinky_vs)
+set(CMAKE_PROJECT_NAME battery_monitor)
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -27,6 +27,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
+
+# ============================================
+# Compiler warnings (added for MISRA/CERT compliance)
+# ============================================
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(
+        -Wall           # All standard warnings
+        -Wextra         # Extra warnings  
+        -Wpedantic      # Strict ISO C compliance
+        -Wshadow        # Variable shadowing
+        -Wconversion    # Implicit conversions
+        -Wsign-conversion # Signed/unsigned mismatches
+        -Wunused-parameter # Unused parameters
+        -Og         # Optimize for debugging (not -O0)
+        -g3         # Highest debug level (includes macros)
+    )
+endif()
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)

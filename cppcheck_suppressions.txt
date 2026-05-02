@@ -1,0 +1,19 @@
+// Suppress "unmatched suppression" warnings (informational only)
+unmatchedSuppression
+
+// CubeMX generated syscall stubs - required for build but never called
+unusedFunction:*/syscalls.c
+unusedFunction:*/sysmem.c
+
+// Standard library headers - not needed for cross-compilation
+missingIncludeSystem
+
+// Syscall parameter signature - required by POSIX standard
+constParameterPointer:*/syscalls.c
+
+// CMSIS compiler detection - false positive for ARM GCC
+preprocessorErrorDirective:*/cmsis_compiler.h
+
+// System initialization functions - CubeMX generated
+unreadVariable:*/system_stm32f1xx.c
+redundantAssignment:*/system_stm32f1xx.c

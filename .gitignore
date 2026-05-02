@@ -2,6 +2,12 @@
 build/
 Debug/
 Release/
+cppcheck_cache/
+cppcheck_report.xml
+cppcheck_report_COMPLETE.xml
+cppcheck_html_report/
+cppcheck_html_report_COMPLETE/
+suppressions_log.txt
 *.o
 *.d
 *.lst
@@ -24,3 +30,4 @@ mx.scratch
 # Ignore OS junk
 .DS_Store
 Thumbs.db
+to_do.txt
