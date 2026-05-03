@@ -154,11 +154,21 @@ bool bq76920_read_voltage(const bq76920_handle_t *handle,
 
 ## 7. Git Commit Convention
 
-- feat: add BQ76920 cell voltage reading
-- fix: correct I2C address shift
-- docs: add coding style guide
-- refactor: extract I2C retry logic
+This project follows [Conventional Commits](https://www.conventionalcommits.org/). All commit messages must use the following format:
 
+### Valid Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `feat` | New feature | `feat: add BQ76920 cell voltage reading` |
+| `fix` | Bug fix | `fix: correct I2C address shift calculation` |
+| `docs` | Documentation only | `docs: add coding style guide` |
+| `refactor` | Code change (no bug fix or feature) | `refactor: extract I2C retry logic` |
+| `chore` | Maintenance tasks | `chore: update cppcheck suppressions` |
+| `style` | Code style/formatting only | `style: fix indentation in main.c` |
+| `test` | Add or fix tests | `test: add unit tests for CRC` |
+| `perf` | Performance improvement | `perf: optimize I2C read timing` |
+| `ci` | CI/CD configuration | `ci: add GitHub Actions workflow` |
 ---
 
 ## 8. Compliance Checklist
