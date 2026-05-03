@@ -38,7 +38,7 @@
 ## 3. MISRA C:2012 Core Rules
 
 ### Rule 15.5: Single Exit Point
-
+```
 [GOOD EXAMPLE]
 bool bq76920_write_reg(const handle_t *h, uint8_t reg, uint8_t val) {
     bool success = false;
@@ -49,12 +49,15 @@ bool bq76920_write_reg(const handle_t *h, uint8_t reg, uint8_t val) {
     }
     return success;
 }
+```
 
+```
 [BAD EXAMPLE]
 bool bad_write(handle_t *h, uint8_t reg, uint8_t val) {
     if (h == NULL) return false;
     return i2c_write(h->addr, reg, val);
 }
+```
 
 ### Rule 8.13: Const Correctness
 
@@ -94,6 +97,7 @@ uint16_t *voltages = malloc(5 * sizeof(uint16_t));
 | ARR30-C | Bounds-check array indices |
 | MSC37-C | Non-void functions must return a value |
 
+```
 [EXAMPLE: EXP33-C + DCL37-C]
 static bool read_i2c_byte(const bq76920_handle_t *handle,
                            uint8_t reg,
@@ -103,11 +107,14 @@ static bool read_i2c_byte(const bq76920_handle_t *handle,
     }
     return true;
 }
+```
 
+```
 [EXAMPLE: ARR30-C]
 if (cell_index < BQ76920_MAX_CELLS) {
     voltages[cell_index] = raw_value;
 }
+```
 
 ---
 
@@ -119,17 +126,20 @@ Recommended Types:
 - uint32_t, int32_t (instead of unsigned long)
 - bool (instead of uint8_t as boolean)
 
+```
 Error Codes:
 typedef enum {
     BQ76920_OK = 0,
     BQ76920_ERR_I2C = -1,
     BQ76920_ERR_PARAM = -2
 } bq76920_error_e;
+```
 
 ---
 
 ## 6. Documentation Format
 
+```
 /**
  * @brief Read cell voltage from BQ76920 AFE
  * @param[in] handle Pointer to device handle
@@ -138,6 +148,7 @@ typedef enum {
  */
 bool bq76920_read_voltage(const bq76920_handle_t *handle,
                           uint16_t *voltage_mv);
+```
 
 ---
 
