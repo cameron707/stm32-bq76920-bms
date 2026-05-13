@@ -1,0 +1,2 @@
+- Press the boot switch on the EVM to start. The chip will not respond to i2c before the switch is pressed.
+- Don't have any startup delays before initialising the usb-serial as it needs to initialise quickly for the handshake process so that the device can be successfully registered as a COM port.
