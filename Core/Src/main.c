@@ -100,21 +100,22 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-
+    uint8_t sys_stat = 0;
+    
     if (HAL_I2C_IsDeviceReady(&hi2c1, (0x08 << 1), 3, 100) == HAL_OK) {
-        // Device found at address 0x08
-        HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
         printf("Device found at address 0x08\r\n");
-        HAL_Delay(100);
-    } else {
-        // No device found
-        HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
-        HAL_Delay(1000);
-    }
-    HAL_Delay(100);
+        
+        // Read SYS_STAT register to prove full communication
+        if (HAL_I2C_Mem_Read(&hi2c1, (0x08 << 1), 0x00, I2C_MEMADD_SIZE_8BIT, &sys_stat, 1, 100) == HAL_OK) {
+            printf("SYS_STAT = 0x%02X\r\n", sys_stat);
+            while(1);
+        } 
+        else 
+        {
+            printf("Register read failed!\r\n");
+            while(1);
+        }
+    } 
   }
   /* USER CODE END 3 */
 }

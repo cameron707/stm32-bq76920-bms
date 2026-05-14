@@ -194,17 +194,18 @@ A test is considered **FAILED** if:
 
 ## 7. Test Schedule
 
-| Phase | Activities | Duration | Target Date |
-|-------|------------|----------|-------------|
-| **Phase 1** | Static analysis (cppcheck) + fix violations | 2 hours | Day 1 |
-| **Phase 2** | I2C communication validation (BQ76920 detection) | 1 hour | Day 1 |
-| **Phase 3** | Voltage measurement accuracy testing | 1 hour | Day 1 |
-| **Phase 4** | Current measurement validation | 1 hour | Day 2 |
-| **Phase 5** | Protection feature testing (OV, UV, OT) | 2 hours | Day 2 |
-| **Phase 6** | Integration testing with real 3S battery pack | 2 hours | Day 2 |
-| **Phase 7** | Documentation and test report | 1 hour | Day 2 |
+| Phase | Activities | Duration | Target Date | Status |
+|-------|------------|----------|-------------|--------|
+| **Phase 1** | I2C communication validation (BQ76920 detection) | 1 hour | Day 1 | ✅ Complete |
+| **Phase 2** | Voltage measurement accuracy testing | 1 hour | Day 1 | ⏳ Pending |
+| **Phase 3** | Current measurement validation | 1 hour | Day 2 | ⏳ Pending |
+| **Phase 4** | Temperature measurement validation | 1 hour | Day 2 | ⏳ Pending |
+| **Phase 5** | Protection feature testing (OV, UV, OT) | 2 hours | Day 2 | ⏳ Pending |
+| **Phase 6** | Integration testing with real 3S battery pack | 2 hours | Day 2 | ⏳ Pending |
+| **Phase 7** | Static analysis (cppcheck) | 1 hour | Day 2 | ⏳ Pending |
+| **Phase 8** | Documentation and test report | 1 hour | Day 2 | ⏳ Pending |
 
-**Total estimated time:** ~10 hours (2 days)
+**Total estimated time:** ~10 hours
 
 ---
 

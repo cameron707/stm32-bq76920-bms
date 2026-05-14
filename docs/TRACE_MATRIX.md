@@ -33,7 +33,7 @@
 | <a href="tests/integration/TC-INT-OV-001.md" target="_blank">TC-INT-OV-001</a> | Integration | <a href="SRS.md#req-func-004" target="_blank">REQ-FUNC-004</a> | Not Run |
 | <a href="tests/integration/TC-INT-UV-001.md" target="_blank">TC-INT-UV-001</a> | Integration | <a href="SRS.md#req-func-005" target="_blank">REQ-FUNC-005</a> | Not Run |
 | <a href="tests/integration/TC-INT-OT-001.md" target="_blank">TC-INT-OT-001</a> | Integration | <a href="SRS.md#req-func-006" target="_blank">REQ-FUNC-006</a> | Not Run |
-| <a href="tests/integration/TC-INT-I2C-001.md" target="_blank">TC-INT-I2C-001</a> | Integration | <a href="SRS.md#hwi-01" target="_blank">HWI-01</a> | Not Run |
+| <a href="tests/integration/TC-INT-I2C-001.md" target="_blank">TC-INT-I2C-001</a> | Integration | <a href="SRS.md#hwi-01" target="_blank">HWI-01</a> | Pass |
 | <a href="tests/system/TC-SYS-VOLT-001.md" target="_blank">TC-SYS-VOLT-001</a> | System | <a href="SRS.md#req-func-001" target="_blank">REQ-FUNC-001</a> | Not Run |
 | <a href="tests/system/TC-SYS-CURR-001.md" target="_blank">TC-SYS-CURR-001</a> | System | <a href="SRS.md#req-func-002" target="_blank">REQ-FUNC-002</a> | Not Run |
 | <a href="tests/system/TC-SYS-TEMP-001.md" target="_blank">TC-SYS-TEMP-001</a> | System | <a href="SRS.md#req-func-003" target="_blank">REQ-FUNC-003</a> | Not Run |
