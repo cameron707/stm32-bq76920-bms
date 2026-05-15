@@ -1,0 +1,22 @@
+========================================
+UT-TEMP-001: Temperature Conversion Unit Test
+========================================
+
+Test 1: External NTC conversion
+--------------------------------
+  Raw: 4072 -> Result: 27.6C (Expected: 27.6C)
+  Result: PASS (within expected range)
+
+Test 2: Die temperature at V25 (1.200V)
+----------------------------------------
+  Raw: 3141 -> Result: 25.2C (Expected: 25.0C)
+  Result: PASS
+
+Test 3: Die temperature at 3400 counts
+-----------------------------------------------
+  Raw: 3400 -> Result: 1.6C
+  Result: PASS
+
+========================================
+Test Summary: 3 passed, 0 failed
+========================================

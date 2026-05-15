@@ -70,6 +70,7 @@ This project follows a V-Model development process with complete traceability fr
 - MQTT publishing to Alibaba Cloud
 - FreeRTOS task management (optional)
 - Altium PCB design (custom board) with active cell balancing
+- Calibration and testing firmware for the custom PCB
 
 ## Author
 

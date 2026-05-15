@@ -15,6 +15,7 @@ suppressions_log.txt
 *.bin
 *.hex
 *.elf
+*.exe
 
 # Ignore IDE files
 .vscode/

@@ -313,7 +313,7 @@ Verification confirms that each requirement has been implemented correctly and f
 
 | Requirement | Description | Unit Test | Integration Test | System Test | Status |
 |-------------|-------------|-----------|------------------|-------------|--------|
-| <a href="#req-func-001">REQ-FUNC-001</a> | Read cell voltage (±5mV accuracy) | UT-VOLT-001: Conversion formula accuracy | TC-INT-VOLT-001: I2C + voltage read on hardware | TC-SYS-VOLT-001: Full measurement with real battery | Not Run |
+| <a href="#req-func-001">REQ-FUNC-001</a> | Read cell voltage | UT-VOLT-001: Conversion formula accuracy | TC-INT-VOLT-001: I2C + voltage read on hardware | TC-SYS-VOLT-001: Full measurement with real battery | Not Run |
 | <a href="#req-func-002">REQ-FUNC-002</a> | Read pack current (±10A range) | UT-CURR-001: Conversion formula accuracy | TC-INT-CURR-001: I2C + current read on hardware | TC-SYS-CURR-001: Full measurement with real battery | Not Run |
 | <a href="#req-func-003">REQ-FUNC-003</a> | Read temperature (±1°C) | UT-TEMP-001: Conversion formula accuracy | TC-INT-TEMP-001: I2C + temp read on hardware | TC-SYS-TEMP-001: Full measurement with real battery | Not Run |
 | <a href="#req-func-004">REQ-FUNC-004</a> | Overvoltage protection (4.25V cutoff) | UT-PROT-001: Detection logic | TC-INT-OV-001: Detection + FET control integration | TC-SYS-OV-001: Full protection with real battery | Not Run |

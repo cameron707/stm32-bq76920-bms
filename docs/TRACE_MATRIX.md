@@ -21,15 +21,15 @@
 
 | Test ID | Test Level | Verified Requirements | Status |
 |---------|------------|----------------------|--------|
-| <a href="tests/unit/UT-VOLT-001.md" target="_blank">UT-VOLT-001</a> | Unit | <a href="SRS.md#req-func-001" target="_blank">REQ-FUNC-001</a> | Not Run |
+| <a href="tests/unit/UT-VOLT-001.md" target="_blank">UT-VOLT-001</a> | Unit | <a href="SRS.md#req-func-001" target="_blank">REQ-FUNC-001</a> | Pass |
 | <a href="tests/unit/UT-CURR-001.md" target="_blank">UT-CURR-001</a> | Unit | <a href="SRS.md#req-func-002" target="_blank">REQ-FUNC-002</a> | Not Run |
-| <a href="tests/unit/UT-TEMP-001.md" target="_blank">UT-TEMP-001</a> | Unit | <a href="SRS.md#req-func-003" target="_blank">REQ-FUNC-003</a> | Not Run |
+| <a href="tests/unit/UT-TEMP-001.md" target="_blank">UT-TEMP-001</a> | Unit | <a href="SRS.md#req-func-003" target="_blank">REQ-FUNC-003</a> | Pass |
 | <a href="tests/unit/UT-PROT-001.md" target="_blank">UT-PROT-001</a> | Unit | <a href="SRS.md#req-func-004" target="_blank">REQ-FUNC-004</a> | Not Run |
 | <a href="tests/unit/UT-PROT-002.md" target="_blank">UT-PROT-002</a> | Unit | <a href="SRS.md#req-func-005" target="_blank">REQ-FUNC-005</a> | Not Run |
 | <a href="tests/unit/UT-PROT-003.md" target="_blank">UT-PROT-003</a> | Unit | <a href="SRS.md#req-func-006" target="_blank">REQ-FUNC-006</a> | Not Run |
-| <a href="tests/integration/TC-INT-VOLT-001.md" target="_blank">TC-INT-VOLT-001</a> | Integration | <a href="SRS.md#req-func-001" target="_blank">REQ-FUNC-001</a> | Not Run |
+| <a href="tests/integration/TC-INT-VOLT-001.md" target="_blank">TC-INT-VOLT-001</a> | Integration | <a href="SRS.md#req-func-001" target="_blank">REQ-FUNC-001</a> | Pass |
 | <a href="tests/integration/TC-INT-CURR-001.md" target="_blank">TC-INT-CURR-001</a> | Integration | <a href="SRS.md#req-func-002" target="_blank">REQ-FUNC-002</a> | Not Run |
-| <a href="tests/integration/TC-INT-TEMP-001.md" target="_blank">TC-INT-TEMP-001</a> | Integration | <a href="SRS.md#req-func-003" target="_blank">REQ-FUNC-003</a> | Not Run |
+| <a href="tests/integration/TC-INT-TEMP-001.md" target="_blank">TC-INT-TEMP-001</a> | Integration | <a href="SRS.md#req-func-003" target="_blank">REQ-FUNC-003</a> | Pass |
 | <a href="tests/integration/TC-INT-OV-001.md" target="_blank">TC-INT-OV-001</a> | Integration | <a href="SRS.md#req-func-004" target="_blank">REQ-FUNC-004</a> | Not Run |
 | <a href="tests/integration/TC-INT-UV-001.md" target="_blank">TC-INT-UV-001</a> | Integration | <a href="SRS.md#req-func-005" target="_blank">REQ-FUNC-005</a> | Not Run |
 | <a href="tests/integration/TC-INT-OT-001.md" target="_blank">TC-INT-OT-001</a> | Integration | <a href="SRS.md#req-func-006" target="_blank">REQ-FUNC-006</a> | Not Run |
@@ -64,10 +64,10 @@
 
 | Test Level | Total Tests | Passed | Failed | Not Run |
 |------------|-------------|--------|--------|---------|
-| Unit | 6 | 0 | 0 | 6 |
-| Integration | 7 | 0 | 0 | 7 |
+| Unit | 6 | 2 | 0 | 4 |
+| Integration | 7 | 3 | 0 | 4 |
 | System | 11 | 0 | 0 | 11 |
-| **Total** | **24** | **0** | **0** | **24** |
+| **Total** | **24** | **5** | **0** | **19** |
 
 ## How to Use
 

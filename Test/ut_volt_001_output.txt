@@ -1,0 +1,52 @@
+--------------------------------------------------
+UT-VOLT-001: Voltage Conversion Unit Test
+--------------------------------------------------
+
+Test 1: Zero input test
+  Input: counts=    0, gain=382 uV/LSB, offset=   0 mV
+  Result:    0 mV, Expected:    0 mV, Diff: 0 mV
+  Result: PASS
+
+Test 2: Nominal: 2621 counts -> 1000 mV (±5 mV tolerance for integer math)
+  Input: counts= 2621, gain=382 uV/LSB, offset=   0 mV
+  Result: 1001 mV, Expected: 1000 mV, Diff: 1 mV
+  Result: PASS
+
+Test 3: Nominal: 5242 counts -> 2000 mV (±5 mV tolerance)
+  Input: counts= 5242, gain=382 uV/LSB, offset=   0 mV
+  Result: 2002 mV, Expected: 2000 mV, Diff: 2 mV
+  Result: PASS
+
+Test 4: Nominal: 7863 counts -> 3000 mV (±5 mV tolerance)
+  Input: counts= 7863, gain=382 uV/LSB, offset=   0 mV
+  Result: 3003 mV, Expected: 3000 mV, Diff: 3 mV
+  Result: PASS
+
+Test 5: Nominal: 10484 counts -> 4000 mV (±5 mV tolerance)
+  Input: counts=10484, gain=382 uV/LSB, offset=   0 mV
+  Result: 4004 mV, Expected: 4000 mV, Diff: 4 mV
+  Result: PASS
+
+Test 6: Nominal: 13107 counts -> 5000 mV (±10 mV tolerance, exceeds normal Li-ion range)
+  Input: counts=13107, gain=382 uV/LSB, offset=   0 mV
+  Result: 5006 mV, Expected: 5000 mV, Diff: 6 mV
+  Result: PASS
+
+Test 7: Actual hardware: Cell 1 (9459 counts -> 3612 mV)
+  Input: counts= 9459, gain=377 uV/LSB, offset=  46 mV
+  Result: 3612 mV, Expected: 3612 mV, Diff: 0 mV
+  Result: PASS
+
+Test 8: Actual hardware: Cell 2 (9423 counts -> 3598 mV)
+  Input: counts= 9423, gain=377 uV/LSB, offset=  46 mV
+  Result: 3598 mV, Expected: 3598 mV, Diff: 0 mV
+  Result: PASS
+
+Test 9: Actual hardware: Cell 3 (9434 counts -> 3602 mV)
+  Input: counts= 9434, gain=377 uV/LSB, offset=  46 mV
+  Result: 3602 mV, Expected: 3602 mV, Diff: 0 mV
+  Result: PASS
+
+--------------------------------------------------
+Test Summary: 9 passed, 0 failed
+--------------------------------------------------

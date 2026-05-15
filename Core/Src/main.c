@@ -22,6 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include "bq76920.h"
 
 /* USER CODE END Includes */
 
@@ -68,7 +70,10 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
- 
+  bq76920_handle_t bms = {0};
+  int16_t temp_readings[10];
+  float max_variation = 0.0f;
+  float stability_tolerance = 0.5f;
 
   /* USER CODE END 1 */
 
@@ -93,6 +98,173 @@ int main(void)
   MX_I2C1_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
+  
+  HAL_Delay(10000); // Time to connect USB and open terminal
+  printf("\r\n\r\n");
+  printf("========================================\r\n");
+  printf("BQ76920 BMS Integration Test\r\n");
+  printf("========================================\r\n");
+  printf("Initializing BQ76920 driver...\r\n");
+
+  if (!bq76920_init(&bms, &hi2c1))
+  {
+      printf("ERROR: Driver initialization failed!\r\n");
+      printf("Check I2C connections and power.\r\n");
+      while (1)
+      {
+          HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
+          HAL_Delay(500);
+      }
+  }
+  printf("Driver initialized successfully.\r\n");
+  printf("ADC Gain: %d uV/LSB, ADC Offset: %d mV\r\n", bms.adc_gain, bms.adc_offset);
+
+  if (!bq76920_enable_adc(&bms))
+  {
+      printf("ERROR: ADC enable failed!\r\n");
+      while (1)
+      {
+          HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
+          HAL_Delay(100);
+      }
+  }
+  printf("ADC enabled.\r\n");
+  printf("Waiting for ADC to stabilize...\r\n");
+  HAL_Delay(250);   /* 250ms per datasheet for cell voltage stabilization */
+
+  /* ============================================ */
+  /* Temperature Stability Test - Die Temperature */
+  /* ============================================ */
+  printf("\r\n========================================\r\n");
+  printf("Testing die temperature (TEMP_SEL=0)\r\n");
+  printf("========================================\r\n");
+
+  if (!bq76920_select_temperature_source(&bms, false))
+  {
+      printf("ERROR: Failed to select die temperature!\r\n");
+  }
+  else
+  {
+      HAL_Delay(2000);  /* 2s per datasheet for mode switch */
+      
+      printf("Reading die temperature 10 times...\r\n");
+      for (int i = 0; i < 10; i++)
+      {
+          if (bq76920_read_temperature(&bms))
+          {
+              temp_readings[i] = bms.temp_tenths;
+              int16_t temp_c = temp_readings[i] / 10;
+              int16_t temp_frac = temp_readings[i] % 10;
+              if (temp_frac < 0) temp_frac = -temp_frac;
+              printf("  Read %d: %d.%d C\r\n", i + 1, temp_c, temp_frac);
+          }
+          else
+          {
+              printf("  Read %d: ERROR!\r\n", i + 1);
+          }
+          HAL_Delay(500);
+      }
+      
+      /* Calculate stability (maximum consecutive variation) */
+      max_variation = 0.0f;
+      for (int i = 1; i < 10; i++)
+      {
+          float variation = (float)(temp_readings[i] - temp_readings[i - 1]) / 10.0f;
+          if (variation < 0) variation = -variation;
+          if (variation > max_variation) max_variation = variation;
+      }
+      
+      int16_t first_c = temp_readings[0] / 10;
+      int16_t first_frac = temp_readings[0] % 10;
+      if (first_frac < 0) first_frac = -first_frac;
+      int16_t last_c = temp_readings[9] / 10;
+      int16_t last_frac = temp_readings[9] % 10;
+      if (last_frac < 0) last_frac = -last_frac;
+      
+      printf("\r\nDie Temperature Results:\r\n");
+      printf("  Range: %d.%d C - %d.%d C\r\n", first_c, first_frac, last_c, last_frac);
+      printf("  Max consecutive variation: %.2f C\r\n", max_variation);
+      
+      if (max_variation <= stability_tolerance)
+      {
+          printf("  Stability: PASS (<= %.1f C)\r\n", stability_tolerance);
+      }
+      else
+      {
+          printf("  Stability: FAIL (> %.1f C)\r\n", stability_tolerance);
+      }
+  }
+
+  /* ============================================ */
+  /* Temperature Stability Test - External NTC    */
+  /* ============================================ */
+  printf("\r\n========================================\r\n");
+  printf("Testing external NTC temperature (TEMP_SEL=1)\r\n");
+  printf("========================================\r\n");
+
+  if (!bq76920_select_temperature_source(&bms, true))
+  {
+      printf("ERROR: Failed to select external NTC!\r\n");
+  }
+  else
+  {
+      HAL_Delay(2000);  /* 2s per datasheet for mode switch */
+      
+      printf("Reading external temperature 10 times...\r\n");
+      for (int i = 0; i < 10; i++)
+      {
+          if (bq76920_read_temperature(&bms))
+          {
+              temp_readings[i] = bms.temp_tenths;
+              int16_t temp_c = temp_readings[i] / 10;
+              int16_t temp_frac = temp_readings[i] % 10;
+              if (temp_frac < 0) temp_frac = -temp_frac;
+              printf("  Read %d: %d.%d C\r\n", i + 1, temp_c, temp_frac);
+          }
+          else
+          {
+              printf("  Read %d: ERROR!\r\n", i + 1);
+          }
+          HAL_Delay(500);
+      }
+      
+      /* Calculate stability (maximum consecutive variation) */
+      max_variation = 0.0f;
+      for (int i = 1; i < 10; i++)
+      {
+          float variation = (float)(temp_readings[i] - temp_readings[i - 1]) / 10.0f;
+          if (variation < 0) variation = -variation;
+          if (variation > max_variation) max_variation = variation;
+      }
+      
+      int16_t first_c = temp_readings[0] / 10;
+      int16_t first_frac = temp_readings[0] % 10;
+      if (first_frac < 0) first_frac = -first_frac;
+      int16_t last_c = temp_readings[9] / 10;
+      int16_t last_frac = temp_readings[9] % 10;
+      if (last_frac < 0) last_frac = -last_frac;
+      
+      printf("\r\nExternal NTC Results:\r\n");
+      printf("  Range: %d.%d C - %d.%d C\r\n", first_c, first_frac, last_c, last_frac);
+      printf("  Max consecutive variation: %.2f C\r\n", max_variation);
+      
+      /* External NTC tolerance is tighter (±0.3°C) */
+      if (max_variation <= 0.3f)
+      {
+          printf("  Stability: PASS (<= 0.3 C)\r\n");
+      }
+      else
+      {
+          printf("  Stability: FAIL (> 0.3 C)\r\n");
+      }
+  }
+
+  /* Switch back to die temperature for normal operation */
+  //bq76920_select_temperature_source(&bms, false);
+  
+  printf("\r\n========================================\r\n");
+  printf("Starting continuous voltage measurements...\r\n");
+  printf("========================================\r\n");
 
   /* USER CODE END 2 */
 
@@ -100,22 +272,42 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    uint8_t sys_stat = 0;
-    
-    if (HAL_I2C_IsDeviceReady(&hi2c1, (0x08 << 1), 3, 100) == HAL_OK) {
-        printf("Device found at address 0x08\r\n");
-        
-        // Read SYS_STAT register to prove full communication
-        if (HAL_I2C_Mem_Read(&hi2c1, (0x08 << 1), 0x00, I2C_MEMADD_SIZE_8BIT, &sys_stat, 1, 100) == HAL_OK) {
-            printf("SYS_STAT = 0x%02X\r\n", sys_stat);
-            while(1);
-        } 
-        else 
-        {
-            printf("Register read failed!\r\n");
-            while(1);
-        }
-    } 
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+    if (bq76920_read_all_voltages(&bms))
+    {
+        printf("Cell 1: %4d mV  Cell 2: %4d mV  Cell 3: %4d mV Cell 4: %4d mV Cell 5: %4d mV\r\n",
+                bms.cell_mV[0], bms.cell_mV[1], bms.cell_mV[2], bms.cell_mV[3], bms.cell_mV[4]);
+    }
+    else
+    {
+        printf("ERROR: Failed to read cell voltages!\r\n");
+    }
+
+    if (bq76920_read_pack_voltage(&bms))
+    {
+        printf("Pack:  %4d mV\r\n", bms.pack_mV);
+    }
+    else
+    {
+        printf("ERROR: Failed to read pack voltage!\r\n");
+    }
+
+    if (bq76920_read_temperature(&bms))
+    {
+        int16_t temp_c = bms.temp_tenths / 10;
+        int16_t temp_frac = bms.temp_tenths % 10;
+        if (temp_frac < 0) temp_frac = -temp_frac;
+        printf("Temp:  %d.%d C\r\n", temp_c, temp_frac);
+    }
+    else
+    {
+        printf("ERROR: Failed to read temperature!\r\n");
+    }
+
+    printf("----------------------------------------\r\n");
+    HAL_Delay(2000);
   }
   /* USER CODE END 3 */
 }
