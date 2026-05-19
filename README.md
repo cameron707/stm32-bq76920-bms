@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Battery Management System (BMS) for 5-cell Li-ion and LiFePo battery packs using the STM32F103 microcontroller and Texas Instruments BQ76920 battery monitor IC.
+A Battery Management System (BMS) for 5-cell Li-ion battery packs using the STM32F103 microcontroller and Texas Instruments BQ76920 battery monitor IC. LiFePO4 support is planned as a future extension.
 
 ## Documentation
 
@@ -22,7 +22,7 @@ This project follows a V-Model development process with complete traceability fr
 
 | Standard | Scope | Evidence |
 |----------|-------|----------|
-| **ISO 26262** | Functional safety (ASIL B) | HARA document, safety traceability |
+| **ISO 26262** | Functional safety (up to ASIL C) | HARA document, safety traceability |
 | **MISRA C:2012** | Embedded C coding safety | Coding style guide, Cppcheck analysis |
 | **CERT C** | Secure C coding | Coding style guide, Cppcheck analysis |
 | **ISO/IEC/IEEE 29148** | Requirements engineering | SRS document |
@@ -31,11 +31,11 @@ This project follows a V-Model development process with complete traceability fr
 
 ## Current Features
 
-- Li-ion only for initial proof of concept
+- Li-ion 5-cell support (initial proof of concept)
 - I2C communication between STM32F103 and BQ76920
-- Read individual cell voltages (±5mV accuracy).
-- Passive cell balancing (~17mA using BQ76920EVM default configuration)
-- Overvoltage/undervoltage protection (hardware-based via BQ76920)
+- Read individual cell voltages (±5mV accuracy)
+- Hardware passive cell balancing via BQ76920EVM on-board resistors (~17mA, not firmware-controlled)
+- Overvoltage/undervoltage protection (hardware-based via BQ76920 analog comparators)
 
 ## Hardware
 
@@ -52,7 +52,7 @@ This project follows a V-Model development process with complete traceability fr
 |-------------|-----------|-------------|
 | SDA | PB7 | I2C Data (with 4.7kΩ pull-up) |
 | SCL | PB6 | I2C Clock (with 4.7kΩ pull-up) |
-| ALERT | PA0 | Interrupt output (faults, measurements ready) - with 500kΩ-1MΩ pull-down |
+| ALERT | PA0 | Fault interrupt output — reserved for future ISR implementation |
 | REGOUT | 3.3V | Regulator Output |
 
 ## Getting Started
@@ -64,13 +64,14 @@ This project follows a V-Model development process with complete traceability fr
 
 ## Planned Features
 
-- Extend safety checks to allow for LiFePo
-- Coulomb counting for current monitoring
+- LiFePO4 cell chemistry support (voltage threshold configuration)
+- ALERT pin interrupt service routine (fault detection without polling)
+- Firmware-controlled cell balancing
+- Coulomb counting for state-of-charge estimation
 - ESP8266 WiFi module for cloud telemetry
 - MQTT publishing to Alibaba Cloud
 - FreeRTOS task management (optional)
 - Altium PCB design (custom board) with active cell balancing
-- Calibration and testing firmware for the custom PCB
 
 ## Author
 

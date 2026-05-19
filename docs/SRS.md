@@ -1,9 +1,9 @@
 # Software Requirements Specification
 ## STM32 BQ76920 Battery Management System
 
-**Version:** 1.0  
-**Prepared by:** Cameron Burnett  
-**Date:** 2026-05-03  
+**Version:** 1.1
+**Prepared by:** Cameron Burnett
+**Date:** 2026-05-19
 **Status:** Draft
 
 ---
@@ -40,8 +40,7 @@
 | Name | Date | Reason For Changes | Version |
 |------|------|--------------------|---------|
 | Cameron Burnett | 2026-05-03 | Initial creation | 1.0 |
-| | | | |
-| | | | |
+| Cameron Burnett | 2026-05-19 | Cell count 3→5; fix I2C constraint rationale; expand REQ-FUNC-003 for NTC; fix UI-01 UART→USB CDC; update SWI function signatures; update verification statuses | 1.1 |
 
 ---
 
@@ -59,7 +58,7 @@ This SRS defines **what** the system must do, not **how** it will be implemented
 
 ### 1.2 Product Scope
 
-The STM32 BQ76920 Battery Management System is a 3-cell Li-ion battery monitor and protection system built around an STM32F103 microcontroller and Texas Instruments BQ76920 analog front-end.
+The STM32 BQ76920 Battery Management System is a 5-cell Li-ion battery monitor and protection system built around an STM32F103 microcontroller and Texas Instruments BQ76920 analog front-end.
 
 **Primary capabilities include:**
 - Individual cell voltage monitoring (±5mV accuracy)
@@ -112,7 +111,7 @@ Section 2 provides product background and context. Section 3 contains all requir
 
 ### 2.1 Product Perspective
 
-The BMS is a standalone embedded system that monitors a 3-cell Li-ion battery pack. It is a new product designed for portable electronics and small battery applications. The system provides voltage, current, and temperature data to a user via debug UART (future debugging) and controls external FETs for battery protection.
+The BMS is a standalone embedded system that monitors a 5-cell Li-ion battery pack. It is a new product designed for portable electronics and small battery applications. The system provides voltage, current, and temperature data to a user via USB CDC serial output and controls external FETs for battery protection.
 
 **External Interfaces:**
 - I2C to BQ76920 AFE
@@ -124,7 +123,7 @@ The BMS is a standalone embedded system that monitors a 3-cell Li-ion battery pa
 
 The BMS provides the following major functional areas:
 
-- **Cell voltage monitoring:** Read voltages of 3 series cells via BQ76920
+- **Cell voltage monitoring:** Read voltages of 5 series cells via BQ76920
 - **Current monitoring:** Measure pack current via external shunt
 - **Temperature monitoring:** Measure battery temperature via NTC thermistor
 - **Protection logic:** Disable charge/discharge FETs on fault conditions
@@ -135,7 +134,7 @@ The BMS provides the following major functional areas:
 
 | ID | Constraint | Source |
 |----|------------|--------|
-| CON-01 | I2C communication speed fixed at 100kHz (BQ76920 maximum) | BQ76920 datasheet |
+| CON-01 | I2C communication speed fixed at 100kHz | Noise margin on prototype wiring; BQ76920 supports 400kHz but unnecessary at 100ms loop rate |
 | CON-02 | MCU operating voltage: 3.3V | STM32F103 specification |
 | CON-03 | Programming language: C11 with GNU extensions | Project decision |
 | CON-04 | Static analysis required: MISRA C:2012, CERT C | Quality standard |
@@ -190,7 +189,7 @@ The BMS provides the following major functional areas:
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| <a id="ui-01"></a>UI-01 | Debug UART output shall display cell voltages, current, and temperature when enabled | Low |
+| <a id="ui-01"></a>UI-01 | System shall output cell voltages, current, and temperature via USB CDC serial when connected | Low |
 | <a id="ui-02"></a>UI-02 | LED on PC13 shall blink at 1Hz to indicate system is operational (heartbeat) | Medium |
 
 #### 3.1.2 Hardware Interfaces
@@ -208,10 +207,10 @@ The BMS provides the following major functional areas:
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| SWI-01 | BQ76920 driver shall provide `bq76920_read_voltage(cell)` function | High |
-| SWI-02 | BQ76920 driver shall provide `bq76920_read_current()` function | High |
-| SWI-03 | BQ76920 driver shall provide `bq76920_read_temperature()` function | High |
-| SWI-04 | BQ76920 driver shall provide `bq76920_enable_fets()` and `bq76920_disable_fets()` | High |
+| SWI-01 | BQ76920 driver shall provide `bq76920_read_all_voltages(handle)` returning `bool`; results stored in `handle->cell_mV[]` | High |
+| SWI-02 | BQ76920 driver shall provide `bq76920_read_current(handle, shunt_uOhms)` returning `bool`; result stored in `handle->current_mA` | High |
+| SWI-03 | BQ76920 driver shall provide `bq76920_read_temperature(handle)` returning `bool`; result stored in `handle->temp_tenths` | High |
+| SWI-04 | BQ76920 driver shall provide `bq76920_enable_charge_fet(handle)`, `bq76920_disable_charge_fet(handle)`, `bq76920_enable_discharge_fet(handle)`, `bq76920_disable_discharge_fet(handle)`, each returning `bool` | High |
 
 ### 3.2 Functional
 
@@ -221,7 +220,7 @@ The following functional requirements apply to the BMS system:
 |----|-------------|----------|
 | <a id="req-func-001"></a>REQ-FUNC-001 | System shall measure each cell voltage via BQ76920 I2C with ±5mV accuracy (2.5V-4.2V range) | High |
 | <a id="req-func-002"></a>REQ-FUNC-002 | System shall measure pack current via external shunt with ±10A range | High |
-| <a id="req-func-003"></a>REQ-FUNC-003 | System shall measure battery temperature via BQ76920 internal temperature sensor | Medium |
+| <a id="req-func-003"></a>REQ-FUNC-003 | System shall measure battery temperature via BQ76920 TS1 register, supporting both internal die temperature (TEMP_SEL=0) and external NTC thermistor (TEMP_SEL=1) modes | Medium |
 | <a id="req-func-004"></a>REQ-FUNC-004 | System shall disable charge FET when any cell exceeds 4.25V | High |
 | <a id="req-func-005"></a>REQ-FUNC-005 | System shall disable discharge FET when any cell falls below 2.8V | High |
 | <a id="req-func-006"></a>REQ-FUNC-006 | System shall disable both FETs when temperature exceeds 60°C | Medium |
@@ -313,13 +312,13 @@ Verification confirms that each requirement has been implemented correctly and f
 
 | Requirement | Description | Unit Test | Integration Test | System Test | Status |
 |-------------|-------------|-----------|------------------|-------------|--------|
-| <a href="#req-func-001">REQ-FUNC-001</a> | Read cell voltage | UT-VOLT-001: Conversion formula accuracy | TC-INT-VOLT-001: I2C + voltage read on hardware | TC-SYS-VOLT-001: Full measurement with real battery | Not Run |
+| <a href="#req-func-001">REQ-FUNC-001</a> | Read cell voltage | UT-VOLT-001: Conversion formula accuracy | TC-INT-VOLT-001: I2C + voltage read on hardware | TC-SYS-VOLT-001: Full measurement with real battery | Pass (UT + Integration) |
 | <a href="#req-func-002">REQ-FUNC-002</a> | Read pack current (±10A range) | UT-CURR-001: Conversion formula accuracy | TC-INT-CURR-001: I2C + current read on hardware | TC-SYS-CURR-001: Full measurement with real battery | Not Run |
-| <a href="#req-func-003">REQ-FUNC-003</a> | Read temperature (±1°C) | UT-TEMP-001: Conversion formula accuracy | TC-INT-TEMP-001: I2C + temp read on hardware | TC-SYS-TEMP-001: Full measurement with real battery | Not Run |
+| <a href="#req-func-003">REQ-FUNC-003</a> | Read temperature — die and NTC modes | UT-TEMP-001: Conversion formula accuracy | TC-INT-TEMP-001: I2C + temp read on hardware | TC-SYS-TEMP-001: Full measurement with real battery | Pass (UT + Integration) |
 | <a href="#req-func-004">REQ-FUNC-004</a> | Overvoltage protection (4.25V cutoff) | UT-PROT-001: Detection logic | TC-INT-OV-001: Detection + FET control integration | TC-SYS-OV-001: Full protection with real battery | Not Run |
 | <a href="#req-func-005">REQ-FUNC-005</a> | Undervoltage protection (2.8V cutoff) | UT-PROT-002: Detection logic | TC-INT-UV-001: Detection + FET control integration | TC-SYS-UV-001: Full protection with real battery | Not Run |
 | <a href="#req-func-006">REQ-FUNC-006</a> | Overtemperature protection (60°C cutoff) | UT-PROT-003: Detection logic | TC-INT-OT-001: Detection + FET control integration | TC-SYS-OT-001: Full protection with real battery | Not Run |
-| <a href="#hwi-01">HWI-01</a> | I2C communication at 100kHz | N/A | TC-INT-I2C-001: I2C bus scan and register read | TC-SYS-I2C-001: Reliable comms with real battery | Not Run |
+| <a href="#hwi-01">HWI-01</a> | I2C communication at 100kHz | N/A | TC-INT-I2C-001: I2C bus scan and register read | TC-SYS-I2C-001: Reliable comms with real battery | Pass (Integration) |
 | <a href="#ui-02">UI-02</a> | LED heartbeat (1Hz) | N/A | N/A | TC-SYS-LED-001: Visual confirmation of LED blink | Not Run |
 | <a href="#perf-01">PERF-01</a> | Cycle time <100ms | N/A | N/A | TC-SYS-PERF-001: Timing measurement with oscilloscope | Not Run |
 | <a href="#cmp-01">CMP-01</a> | MISRA C:2012 compliance | N/A | N/A | N/A | Pass (Cppcheck) |
@@ -360,7 +359,7 @@ Traceability matrix stored in `docs/TRACE_MATRIX.md`.
 
 | Requirement ID | Source (Backward Trace) | Test Case ID (Forward Trace) | Status |
 |----------------|-------------------------|------------------------------|--------|
-| <a href="#req-func-001">REQ-FUNC-001</a> | HARA (overvoltage risk) | <a href="tests/unit/UT-VOLT-001.md">UT-VOLT-001</a> | Not Run |
+| <a href="#req-func-001">REQ-FUNC-001</a> | HARA (overvoltage risk) | <a href="tests/unit/UT-VOLT-001.md">UT-VOLT-001</a> | Pass |
 | <a href="#req-func-004">REQ-FUNC-004</a> | HARA (overvoltage risk) | <a href="tests/unit/UT-PROT-001.md">UT-PROT-001</a> | Not Run |
 | <a href="#req-func-005">REQ-FUNC-005</a> | HARA (undervoltage risk) | <a href="tests/unit/UT-PROT-002.md">UT-PROT-002</a> | Not Run |
 | <a href="#req-func-006">REQ-FUNC-006</a> | HARA (overtemperature risk) | <a href="tests/unit/UT-PROT-003.md">UT-PROT-003</a> | Not Run |

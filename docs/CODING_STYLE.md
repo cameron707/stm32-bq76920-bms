@@ -20,7 +20,36 @@
 
 ---
 
-## 2. File & Naming Conventions
+## 2. Mandatory Includes
+
+Every `.c` and `.h` file in this project **must** include the following headers:
+
+```c
+#include <stdint.h>   /* uint8_t, uint16_t, uint32_t, int8_t, int16_t, int32_t */
+#include <stdbool.h>  /* bool, true, false */
+```
+
+These types are not built into C — they come from these standard headers. Without them,
+`bool`, `uint8_t`, and `uint16_t` are undefined, and the code may fail to compile or
+behave differently across toolchains.
+
+**In header files**, wrap all content in an include guard to prevent double-inclusion:
+
+```c
+#ifndef BQ76920_H
+#define BQ76920_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+/* ... declarations ... */
+
+#endif /* BQ76920_H */
+```
+
+---
+
+## 3. File & Naming Conventions
 
 | Element | Convention | Example |
 |---------|------------|---------|
@@ -35,7 +64,7 @@
 
 ---
 
-## 3. MISRA C:2012 Core Rules
+## 4. MISRA C:2012 Core Rules
 
 ### Rule 15.5: Single Exit Point
 ```
@@ -85,7 +114,7 @@ uint16_t *voltages = malloc(5 * sizeof(uint16_t));
 
 ---
 
-## 4. CERT C Embedded Subset (7 Core Rules)
+## 5. CERT C Embedded Subset (7 Core Rules)
 
 | Rule | Description |
 |------|-------------|
@@ -118,7 +147,7 @@ if (cell_index < BQ76920_MAX_CELLS) {
 
 ---
 
-## 5. Type Usage & Error Handling
+## 6. Type Usage & Error Handling
 
 Recommended Types:
 - uint8_t, int8_t (instead of unsigned char)
@@ -137,7 +166,7 @@ typedef enum {
 
 ---
 
-## 6. Documentation Format
+## 7. Documentation Format
 
 ```
 /**
@@ -152,7 +181,7 @@ bool bq76920_read_voltage(const bq76920_handle_t *handle,
 
 ---
 
-## 7. Git Commit Convention
+## 8. Git Commit Convention
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/). All commit messages must use the following format:
 
@@ -169,9 +198,36 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 | `test` | Add or fix tests | `test: add unit tests for CRC` |
 | `perf` | Performance improvement | `perf: optimize I2C read timing` |
 | `ci` | CI/CD configuration | `ci: add GitHub Actions workflow` |
----
 
-## 8. Compliance Checklist
+### Test Bundling Rule
+
+Tests that verify a specific code change **shall be committed together with that change**, not in a separate commit. A commit that changes driver code without its tests is in a broken state — the tests would fail against the new code.
+
+The conventional commits spec only supports one type per commit. When a commit includes both code and its tests, use the type that reflects the dominant change and note the tests in the body:
+
+```
+refactor: replace float NTC with integer LUT
+
+- Replace Steinhart-Hart NTC with 41-entry integer LUT (bq76920.c)
+- Convert die temperature to integer fixed-point; remove math.h
+
+Tests updated to match (ut_temp_001.c, UT-TEMP-001.md)
+```
+
+Pure documentation changes (SRS, SDD, HARA, README, TEST_PLAN) that are
+not caused by a specific code change **shall be in a separate `docs:` commit**,
+since rolling back docs would never break a build.
+
+### Commit Splitting Guideline
+
+| What changed | Commit strategy |
+|--------------|-----------------|
+| Code + its tests | Single commit, code type (`feat`, `fix`, `refactor`) |
+| Code + tests + docs | Two commits: one for code+tests, one `docs:` |
+| Docs only | Single `docs:` commit |
+| Style/formatting only | Single `style:` commit |
+
+## 9. Compliance Checklist
 
 - No compiler warnings (-Wall -Wextra -Wpedantic)
 - All read-only pointers are const
@@ -185,7 +241,7 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 
 ---
 
-## 9. References
+## 10. References
 
 1. MISRA C:2012 – Amendment 3 (2025)
 2. CERT C Coding Standard – Embedded Systems Subset

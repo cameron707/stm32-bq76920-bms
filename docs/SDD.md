@@ -45,7 +45,7 @@ This document covers:
 This document is organized into eight main sections: System Architecture and Design Constraints (Section 2), Component Design (Section 3), Interface Design (Section 4), Data Design (Section 5), Control Flow Design (Section 6), Design Decisions (Section 7), and Traceability (Section 8).
 
 ### 1.6 Context
-The STM32 BQ76920 BMS is an embedded system designed to monitor and protect a 3-cell Li-ion battery pack. It operates as a standalone hardware module that interfaces with the battery pack, providing real-time voltage, current, and temperature data while executing safety-critical protection functions such as overvoltage and overtemperature cutoffs.
+The STM32 BQ76920 BMS is an embedded system designed to monitor and protect a 5-cell Li-ion battery pack. It operates as a standalone hardware module that interfaces with the battery pack, providing real-time voltage, current, and temperature data while executing safety-critical protection functions such as overvoltage and overtemperature cutoffs.
 
 ### 1.7 Summary
 This SDD defines the architecture of the BMS software, including the decomposition of functionality into components (Application Logic, BQ76920 Driver, HAL), the data flow from hardware to application, and the control flow for protection logic. It documents key design decisions, rationale for alternatives, and traceability from requirements to design elements.
@@ -60,7 +60,7 @@ This SDD defines the architecture of the BMS software, including the decompositi
 |-----------|------|-------------|---------------------|
 | STM32F103 | Microcontroller | Executes firmware; runs application logic, I2C driver, protection logic | I2C, SWD, GPIO (LED) |
 | BQ76920 | Analog Front End | Measures cell voltages, pack current, temperature; controls protection FETs | I2C, analog inputs, FET gate drives |
-| BatteryPack | 3S Li-ion | 3 cells in series; 11.1V nominal, 12.6V maximum | Analog outputs to BQ76920 |
+| BatteryPack | 5S Li-ion | 5 cells in series; 18.5V nominal, 21.0V maximum | Analog outputs to BQ76920 |
 
 ### 2.2 Block Definition (Logical Architecture)
 
@@ -82,7 +82,7 @@ This SDD defines the architecture of the BMS software, including the decompositi
 
 | ID | Constraint | Source |
 |----|------------|--------|
-| DC-01 | I2C communication at 100kHz only | BQ76920 datasheet |
+| DC-01 | I2C communication at 100kHz | Noise margin on prototype wiring; BQ76920 supports 400kHz but unnecessary at 100ms loop rate |
 | DC-02 | No dynamic memory allocation (`malloc`) | MISRA C:2012 Rule 21.10 |
 | DC-03 | Static analysis required (Cppcheck) | Project quality standard |
 | DC-04 | STM32F103 runs at 72MHz max | Hardware limitation |
@@ -92,8 +92,8 @@ This SDD defines the architecture of the BMS software, including the decompositi
 | ID | Assumption | Impact if False |
 |----|------------|-----------------|
 | AS-01 | BQ76920 is correctly wired to STM32 via I2C with 4.7kΩ pull-ups | I2C communication fails |
-| AS-02 | Battery is 3S Li-ion (11.1V nominal) | Voltage thresholds would be incorrect |
-| AS-03 | Shunt resistor = 100 μΩ | Current readings would be scaled incorrectly |
+| AS-02 | Battery is 5S Li-ion (18.5V nominal) | Voltage thresholds would be incorrect |
+| AS-03 | Shunt resistor = 1 mΩ (0.001 Ω) per BQ76920EVM Bill of Materials | Current readings would be scaled incorrectly |
 
 ---
 
@@ -115,9 +115,9 @@ This SDD defines the architecture of the BMS software, including the decompositi
 | Function | Parameters | Return Type | Description |
 |----------|------------|-------------|-------------|
 | `bq76920_init` | `handle`, `hi2c` | `bool` | Initializes I2C communication with BQ76920 |
-| `bq76920_read_voltage` | `handle`, `cell_num` | `uint16_t` | Returns cell voltage in millivolts |
-| `bq76920_read_current` | `handle` | `int16_t` | Returns pack current in milliamps |
-| `bq76920_read_temperature` | `handle` | `int16_t` | Returns temperature in 0.1°C units |
+| `bq76920_read_voltage` | `handle`, `cell_num`, `voltage_mv*` | `bool` | Writes cell voltage in millivolts to output pointer; returns false on I2C failure |
+| `bq76920_read_current` | `handle`, `current_ma*` | `bool` | Writes pack current in milliamps to output pointer; returns false on I2C failure |
+| `bq76920_read_temperature` | `handle`, `temp_tenths*` | `bool` | Writes temperature in 0.1°C units to output pointer; returns false on I2C failure |
 | `bq76920_enable_charge_fet` | `handle` | `bool` | Enables charge FET |
 | `bq76920_disable_charge_fet` | `handle` | `bool` | Disables charge FET |
 | `bq76920_enable_discharge_fet` | `handle` | `bool` | Enables discharge FET |
@@ -127,8 +127,8 @@ This SDD defines the architecture of the BMS software, including the decompositi
 
 | Function | Parameters | Return Type | Description | Requirements |
 |----------|------------|-------------|-------------|--------------|
-| `check_overvoltage` | `cell_voltages[3]` | `void` | Disables charge FET if any cell > 4.25V | REQ-FUNC-004 |
-| `check_undervoltage` | `cell_voltages[3]` | `void` | Disables discharge FET if any cell < 2.8V | REQ-FUNC-005 |
+| `check_overvoltage` | `cell_voltages[5]` | `void` | Disables charge FET if any cell > 4.25V | REQ-FUNC-004 |
+| `check_undervoltage` | `cell_voltages[5]` | `void` | Disables discharge FET if any cell < 2.8V | REQ-FUNC-005 |
 | `check_overtemperature` | `temp_tenths` | `void` | Disables both FETs if temperature > 60°C | REQ-FUNC-006 |
 
 ---
@@ -144,6 +144,7 @@ This SDD defines the architecture of the BMS software, including the decompositi
 | SWDIO | PA13 | Bidirectional | SWD data | 4MHz, push-pull |
 | SWCLK | PA14 | Input | SWD clock | 4MHz, push-pull |
 | LED | PC13 | Output | GPIO | Active low (on = 0V, off = 3.3V) |
+| ALERT | PA0 | Input | GPIO | Active low, 500kΩ–1MΩ pull-down; reserved for future ISR implementation |
 
 ### 4.2 I2C Communication Protocol
 
@@ -166,7 +167,7 @@ This SDD defines the architecture of the BMS software, including the decompositi
 | Step | Source | Action | Destination | Data |
 |------|--------|--------|-------------|------|
 | 1 | BQ76920 | Measures cell voltages | STM32 (via I2C) | Raw ADC counts (16-bit) |
-| 2 | STM32 | Converts counts to millivolts | Application logic | `cell_mV[3]` (uint16_t) |
+| 2 | STM32 | Converts counts to millivolts | Application logic | `cell_mV[5]` (uint16_t) |
 | 3 | BQ76920 | Measures pack current | STM32 (via I2C) | Raw counts (16-bit) |
 | 4 | STM32 | Converts counts to milliamps | Application logic | `current_mA` (int16_t) |
 | 5 | BQ76920 | Measures temperature | STM32 (via I2C) | Raw counts (16-bit) |
@@ -178,7 +179,7 @@ This SDD defines the architecture of the BMS software, including the decompositi
 
 | Variable | Type | Description | Range | Source |
 |----------|------|-------------|-------|--------|
-| `cell_mV[3]` | `uint16_t` | Cell voltages in millivolts | 2500-4200 | BQ76920 via I2C |
+| `cell_mV[5]` | `uint16_t` | Cell voltages in millivolts | 2500-4200 | BQ76920 via I2C |
 | `current_mA` | `int16_t` | Pack current in milliamps | -10000 to +10000 | BQ76920 via I2C |
 | `temp_tenths` | `int16_t` | Temperature in 0.1°C units | -200 to +850 | BQ76920 via I2C |
 | `charge_fet_enabled` | `bool` | Charge FET state | true/false | Application decision |
@@ -188,27 +189,48 @@ This SDD defines the architecture of the BMS software, including the decompositi
 
 #### Voltage Conversion
 
-Input: raw_counts (uint16_t from BQ76920 register)
-Output: voltage_mV (uint16_t)
+Input: raw_counts (uint16_t from BQ76920 voltage register)
+Input: gain_uv_per_lsb (uint16_t read from BQ76920 GAIN register on init, typically ~382 µV/LSB)
+Input: offset_mv (int16_t read from BQ76920 OFFSET register on init, typically ~46 mV)
+Output: voltage_mv (uint16_t)
 
-Algorithm: voltage_mV = (raw_counts * 3815) / 10000
-Rationale: 1 LSB = 381.5 μV = 0.3815 mV
+Algorithm: voltage_mv = ((raw_counts * gain_uv_per_lsb) / 1000) + offset_mv
+Rationale: The BQ76920 stores factory calibration values in internal registers. Each chip is
+slightly different. Reading GAIN and OFFSET on startup and applying them gives accurate
+results (±1 mV in hardware tests) versus using a hardcoded constant (~±5 mV). Integer
+division by 1000 converts µV to mV without floating point.
+
+Note: GAIN and OFFSET must be read from the BQ76920 during bq76920_init() and stored
+in the handle struct for use by all subsequent conversion calls.
 
 #### Current Conversion
 
-Input: raw_counts (int16_t from BQ76920 register)
-Output: current_mA (int16_t)
+Input: raw_counts (int16_t from BQ76920 current register)
+Input: gain_uv_per_lsb (uint16_t from handle, same value used for voltage, typically ~382 µV/LSB)
+Input: shunt_mohms (uint16_t, shunt resistance in milliohms = 1 mΩ per BQ76920EVM BOM)
+Output: current_ma (int16_t)
 
-Algorithm: current_mA = (raw_counts * 3815) / (10 * shunt_uOhms)
-Rationale: 1 LSB = 381.5 μV across shunt; shunt = 100 μΩ
+Algorithm: current_ma = (raw_counts * gain_uv_per_lsb) / shunt_mohms
+Rationale: 1 LSB = gain_uv_per_lsb µV across the shunt. The unit relationship
+µV / mΩ = (1×10⁻⁶ V) / (1×10⁻³ Ω) = 1×10⁻³ A = 1 mA, so integer division
+gives the result directly in milliamps without floating point.
+
+Resolution note: With a 1 mΩ shunt and GAIN ≈ 382 µV/LSB, current resolution
+is approximately 382 mA per ADC count. This is intentional — the BQ76920EVM
+shunt is designed for high-current packs. For small pack current monitoring,
+a larger shunt resistor (e.g. 10 mΩ) would give 10× better resolution but
+requires hardware modification. Current measurement is treated as a planned
+feature pending hardware review.
 
 #### Temperature Conversion
 
-Input: raw_counts (uint16_t from BQ76920 register)
+Input: raw_counts (uint16_t from BQ76920 temperature register)
 Output: temp_tenths (int16_t, 0.1°C units)
 
-Algorithm: temp_tenths = raw_counts - 2730
-Rationale: 1 LSB = 0.1°K; 2730 = 273.0°C (absolute zero offset)
+Algorithm: temp_tenths = (int16_t)raw_counts - 2730
+Rationale: 1 LSB = 0.1 K. Subtracting 2730 (representing 273.0 K = 0°C) converts
+from Kelvin to Celsius in 0.1°C units. Cast to int16_t required before subtraction
+to avoid unsigned underflow (MISRA Rule 10.1).
 
 ---
 
@@ -229,7 +251,7 @@ Rationale: 1 LSB = 0.1°K; 2730 = 273.0°C (absolute zero offset)
 
 | Step | Condition | Action |
 |------|-----------|--------|
-| 1 | Read cell voltages via I2C | Store in `cell_mV[3]` |
+| 1 | Read cell voltages via I2C | Store in `cell_mV[5]` |
 | 2 | For each cell | Compare `cell_mV > 4250` |
 | 3 | Overvoltage detected | Call `bq76920_disable_charge_fet()` |
 | 4 | Log error | Record overvoltage event |
@@ -239,7 +261,7 @@ Rationale: 1 LSB = 0.1°K; 2730 = 273.0°C (absolute zero offset)
 
 | Step | Condition | Action |
 |------|-----------|--------|
-| 1 | Read cell voltages via I2C | Store in `cell_mV[3]` |
+| 1 | Read cell voltages via I2C | Store in `cell_mV[5]` |
 | 2 | For each cell | Compare `cell_mV < 2800` |
 | 3 | Undervoltage detected | Call `bq76920_disable_discharge_fet()` |
 | 4 | Log error | Record undervoltage event |
@@ -273,7 +295,7 @@ Rationale: 1 LSB = 0.1°K; 2730 = 273.0°C (absolute zero offset)
 
 | Decision | Rationale | Alternatives Rejected |
 |----------|-----------|----------------------|
-| I2C at 100kHz | BQ76920 maximum supported speed | 400kHz (not supported by BQ76920) |
+| I2C at 100kHz | Noise margin on prototype wiring with jumper cables; BQ76920 supports 400kHz but the extra speed is unnecessary at a 100ms loop rate | 400kHz (supported by BQ76920 but offers no benefit at this loop rate) |
 | Polling instead of interrupts | Simplicity, loop rate sufficient for 100ms protection response | I2C interrupts (unnecessary complexity) |
 | Integer math for voltage conversion | Avoid floating point (no FPU on STM32F103), deterministic timing | Floating point (slower, larger code size) |
 | `HAL_Delay` for timing | Simple, adequate for 100ms heartbeat | Timer interrupts (overkill for this application) |
@@ -311,6 +333,7 @@ Rationale: 1 LSB = 0.1°K; 2730 = 273.0°C (absolute zero offset)
 | Version | Date | Author | Description |
 |---------|------|--------|-------------|
 | 1.0 | 2026-05-05 | Cameron Burnett | Initial SDD creation |
+| 1.1 | 2026-05-18 | Cameron Burnett | Updated cell count to 5S; corrected shunt to 10 mΩ; fixed voltage/current conversion formulas to use calibrated GAIN/OFFSET registers; updated read function signatures to bool + output pointer pattern; corrected I2C speed rationale; added ALERT pin to interface table |
 
 ---
 

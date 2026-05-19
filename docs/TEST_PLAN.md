@@ -9,8 +9,8 @@
 | Field | Value |
 |-------|-------|
 | **Test Plan ID** | TP-BMS-001 |
-| **Version** | 1.0 |
-| **Date** | 2026-05-03 |
+| **Version** | 1.1 |
+| **Date** | 2026-05-19 |
 | **Author** | Cameron Burnett |
 | **Status** | Draft |
 | **Document Classification** | Internal |
@@ -21,7 +21,7 @@
 
 ### 1.1 Background
 
-The STM32 BQ76920 Battery Management System (BMS) is designed to monitor and protect a 3-cell Li-ion battery pack. This test plan defines the strategy for verifying that the system meets its functional, safety, and performance requirements.
+The STM32 BQ76920 Battery Management System (BMS) is designed to monitor and protect a 5-cell Li-ion battery pack. This test plan defines the strategy for verifying that the system meets its functional, safety, and performance requirements.
 
 ### 1.2 Scope
 
@@ -124,7 +124,7 @@ The following artifacts will be tested:
 |-------|---------------|--------|------------------|
 | **Static Analysis** | Code quality, MISRA/CERT C compliance, potential bugs | Automated source code inspection | Cppcheck on host PC |
 | **Integration** | I2C communication, voltage/current reading chain, protection logic | Manual execution with debugger | STM32 + BQ76920 on bench |
-| **System** | Complete BMS behavior with real battery | Manual execution with real load | STM32 + BQ76920 + 3S battery pack |
+| **System** | Complete BMS behavior with real battery | Manual execution with real load | STM32 + BQ76920 + 5S battery pack |
 | **Safety (Fault Injection)** | Overvoltage, undervoltage, I2C timeout responses | Simulate fault conditions | STM32 + BQ76920 + battery simulator |
 
 ### 5.2 Test Techniques
@@ -165,7 +165,7 @@ A test is considered **FAILED** if:
 | Simulated cell voltages | Potentiometer divider | 0-5V range for testing |
 | Simulated current | Precision shunt resistor | ±10A range |
 | Simulated temperature | Variable resistor (NTC emulation) | -20°C to +60°C |
-| Real battery | 3S 18650 pack | Final validation |
+| Real battery | 5S 18650 pack | Final validation |
 
 ### 5.6 Test Tools
 
@@ -197,11 +197,11 @@ A test is considered **FAILED** if:
 | Phase | Activities | Duration | Target Date | Status |
 |-------|------------|----------|-------------|--------|
 | **Phase 1** | I2C communication validation (BQ76920 detection) | 1 hour | Day 1 | ✅ Complete |
-| **Phase 2** | Voltage measurement accuracy testing | 1 hour | Day 1 | ⏳ Pending |
+| **Phase 2** | Voltage measurement accuracy testing | 1 hour | Day 1 | ✅ Complete |
 | **Phase 3** | Current measurement validation | 1 hour | Day 2 | ⏳ Pending |
-| **Phase 4** | Temperature measurement validation | 1 hour | Day 2 | ⏳ Pending |
+| **Phase 4** | Temperature measurement validation | 1 hour | Day 2 | ✅ Complete |
 | **Phase 5** | Protection feature testing (OV, UV, OT) | 2 hours | Day 2 | ⏳ Pending |
-| **Phase 6** | Integration testing with real 3S battery pack | 2 hours | Day 2 | ⏳ Pending |
+| **Phase 6** | Integration testing with real 5S battery pack | 2 hours | Day 2 | ⏳ Pending |
 | **Phase 7** | Static analysis (cppcheck) | 1 hour | Day 2 | ⏳ Pending |
 | **Phase 8** | Documentation and test report | 1 hour | Day 2 | ⏳ Pending |
 
@@ -218,7 +218,7 @@ A test is considered **FAILED** if:
 | STM32F103 Blue Pill | 1 | Available |
 | BQ76920EVM | 1 | Available |
 | ST-LINK V2 | 1 | Available |
-| 3S 18650 Battery Pack | 1 | Available |
+| 5S 18650 Battery Pack | 1 | Available |
 | Oscilloscope | 1 | Unavailable (will use logic analyzer for I2C, multimeter for DC voltages) |
 | Multimeter | 1 | Available |
 
@@ -273,6 +273,7 @@ A test is considered **FAILED** if:
 | Version | Date | Author | Description |
 |---------|------|--------|-------------|
 | 1.0 | 2026-05-03 | Cameron Burnett | Initial test plan creation |
+| 1.1 | 2026-05-19 | Cameron Burnett | Cell count 3→5; mark Phase 2 and Phase 4 complete; update Appendix B statuses; add REQ-FUNC-003 test rows |
 
 ---
 
@@ -282,7 +283,7 @@ A test is considered **FAILED** if:
 
 - PC (VS Code) → USB → ST-LINK V2 → SWD → STM32F103 (Blue Pill)
 - STM32F103 → I2C (PB6/PB7) → BQ76920EVM
-- BQ76920EVM → 3S Battery Pack
+- BQ76920EVM → 5S Battery Pack
 
 ### A.2 Software Setup
 
@@ -297,9 +298,12 @@ A test is considered **FAILED** if:
 
 | Requirement ID | Test Case ID | Test Type | Status |
 |----------------|--------------|-----------|--------|
-| REQ-FUNC-001 | UT-VOLT-001 | Unit | Not Run |
-| REQ-FUNC-001 | TC-INT-VOLT-001 | Integration | Not Run |
+| REQ-FUNC-001 | UT-VOLT-001 | Unit | Pass |
+| REQ-FUNC-001 | TC-INT-VOLT-001 | Integration | Pass |
 | REQ-FUNC-001 | TC-SYS-VOLT-001 | System | Not Run |
+| REQ-FUNC-003 | UT-TEMP-001 | Unit | Pass |
+| REQ-FUNC-003 | TC-INT-TEMP-001 | Integration | Pass |
+| REQ-FUNC-003 | TC-SYS-TEMP-001 | System | Not Run |
 | REQ-FUNC-004 | UT-PROT-001 | Unit | Not Run |
 | REQ-FUNC-004 | TC-INT-OV-001 | Integration | Not Run |
 | REQ-FUNC-004 | TC-SYS-OV-001 | System | Not Run |
