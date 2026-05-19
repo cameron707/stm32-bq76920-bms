@@ -11,7 +11,6 @@
  */
 
 #include "bq76920.h"
-#include <stdio.h>
 
 /*============================================================================*/
 /*                         NTC Thermistor Lookup Table                        */
@@ -437,11 +436,6 @@ bool bq76920_read_all_voltages(bq76920_handle_t *handle)
             }
             else
             {
-                /* Debug printf — remove before production use */
-                printf("Cell %d raw: %5d, calculated: %4d mV\r\n",
-                       (int)(i + 1U), (int)raw,
-                       (int)counts_to_millivolts(handle, raw));
-
                 handle->cell_mV[i] = counts_to_millivolts(handle, raw);
             }
         }

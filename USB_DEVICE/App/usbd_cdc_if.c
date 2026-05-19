@@ -294,7 +294,15 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
 int _write(int file, char *ptr, int len)
 {
-    CDC_Transmit_FS((uint8_t*)ptr, len);
+    uint32_t timeout_ms = HAL_GetTick() + 10U;
+    uint8_t result = USBD_BUSY;
+
+    do
+    {
+        result = CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
+    }
+    while ((result == USBD_BUSY) && (HAL_GetTick() < timeout_ms));
+
     return len;
 }
 

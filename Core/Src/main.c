@@ -23,7 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-#include "bq76920.h"
+#include "bms.h"
 
 /* USER CODE END Includes */
 
@@ -33,15 +33,20 @@
 /* USER CODE END PTD */
 
 /* USER CODE BEGIN PD */
-#define USB_CONNECT_DELAY_MS        10000U  /**< Wait for USB terminal to connect */
-#define TEMP_MODE_SWITCH_DELAY_MS    2000U  /**< Per datasheet: delay after temp source change */
-#define ADC_STABILISE_DELAY_MS        250U  /**< Per datasheet: ADC stabilisation after enable */
-#define TEMP_SAMPLE_COUNT              10   /**< Number of temperature readings per stability test */
-#define TEMP_STABILITY_DIE_TOL_F      0.5f /**< Die temperature max consecutive variation (deg C) */
-#define TEMP_STABILITY_NTC_TOL_F      0.3f /**< NTC temperature max consecutive variation (deg C) */
-#define TEMP_SAMPLE_INTERVAL_MS       500U  /**< Delay between temperature samples */
-#define MAIN_LOOP_DELAY_MS           2000U  /**< Main measurement loop period */
-#define ERROR_BLINK_DELAY_MS          100U  /**< Fast LED blink period on fatal error */
+
+/** Time to wait on startup for a USB terminal to connect before printing. */
+#define USB_CONNECT_DELAY_MS    10000U
+
+/** How often to print a full BMS status report (milliseconds).
+ *  Managed via bms.last_print_ms in the main loop. */
+#define BMS_PRINT_INTERVAL_MS   10000U
+
+/** LED toggle period in milliseconds (500ms = 1Hz blink rate). */
+#define LED_HEARTBEAT_MS          500U
+
+/** Fast LED blink period used during a fatal init failure (milliseconds). */
+#define ERROR_BLINK_DELAY_MS      100U
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,7 +58,7 @@
 I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
-
+static bms_handle_t g_bms = {0};   /**< BMS system handle */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -77,10 +82,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  bq76920_handle_t bms = {0};
-  int16_t temp_readings[TEMP_SAMPLE_COUNT];
-  float max_variation = 0.0f;
-
+  /* (no local variables — BMS handle is file-scope static g_bms) */
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -104,171 +106,44 @@ int main(void)
   MX_I2C1_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  
+
+  /* Wait for a USB terminal to connect before printing anything.
+   * The BQ76920EVM also needs time to power up from the cell simulator. */
   HAL_Delay(USB_CONNECT_DELAY_MS);
+
   printf("\r\n\r\n");
   printf("========================================\r\n");
-  printf("BQ76920 BMS Integration Test\r\n");
+  printf("STM32 BQ76920 Battery Management System\r\n");
   printf("========================================\r\n");
-  printf("Initializing BQ76920 driver...\r\n");
+  printf("Initialising BMS...\r\n");
 
-  if (!bq76920_init(&bms, &hi2c1))
+  /* Initialise the BMS state machine.
+   * bms_init() handles: BQ76920 driver init, ADC enable, temperature source
+   * selection, FET enable, and initial state setup.
+   *
+   * NOTE: The following driver features are NOT yet integration-tested
+   * and will be verified in subsequent test phases:
+   *   - FET control (OV/UV/OT fault response) — Phase 5
+   *   - Current measurement                   — Phase 3
+   */
+  if (!bms_init(&g_bms, &hi2c1))
   {
-      printf("ERROR: Driver initialization failed!\r\n");
-      printf("Check I2C connections and power.\r\n");
-      while (1)
-      {
-          HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
-          HAL_Delay(TEMP_SAMPLE_INTERVAL_MS);
-      }
-  }
-  printf("Driver initialized successfully.\r\n");
-  printf("ADC Gain: %d uV/LSB, ADC Offset: %d mV\r\n", bms.adc_gain, bms.adc_offset);
-
-  if (!bq76920_enable_adc(&bms))
-  {
-      printf("ERROR: ADC enable failed!\r\n");
+      printf("ERROR: BMS initialisation failed!\r\n");
+      printf("Check I2C wiring, pull-up resistors, and BQ76920 power.\r\n");
       while (1)
       {
           HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
           HAL_Delay(ERROR_BLINK_DELAY_MS);
       }
   }
-  printf("ADC enabled.\r\n");
-  printf("Waiting for ADC to stabilize...\r\n");
-  HAL_Delay(ADC_STABILISE_DELAY_MS);
 
-  /* ============================================ */
-  /* Temperature Stability Test - Die Temperature */
-  /* ============================================ */
-  printf("\r\n========================================\r\n");
-  printf("Testing die temperature (TEMP_SEL=0)\r\n");
-  printf("========================================\r\n");
+  printf("BMS initialised successfully.\r\n");
 
-  if (!bq76920_select_temperature_source(&bms, false))
-  {
-      printf("ERROR: Failed to select die temperature!\r\n");
-  }
-  else
-  {
-      HAL_Delay(TEMP_MODE_SWITCH_DELAY_MS);  /* Per datasheet: delay after mode switch */
-      
-      printf("Reading die temperature %d times...\r\n", TEMP_SAMPLE_COUNT);
-      for (int i = 0; i < TEMP_SAMPLE_COUNT; i++)
-      {
-          if (bq76920_read_temperature(&bms))
-          {
-              temp_readings[i] = bms.temp_tenths;
-              int16_t temp_c = temp_readings[i] / 10;
-              int16_t temp_frac = temp_readings[i] % 10;
-              if (temp_frac < 0) temp_frac = -temp_frac;
-              printf("  Read %d: %d.%d C\r\n", i + 1, temp_c, temp_frac);
-          }
-          else
-          {
-              printf("  Read %d: ERROR!\r\n", i + 1);
-          }
-          HAL_Delay(TEMP_SAMPLE_INTERVAL_MS);
-      }
-      
-      /* Calculate stability (maximum consecutive variation) */
-      max_variation = 0.0f;
-      for (int i = 1; i < TEMP_SAMPLE_COUNT; i++)
-      {
-          float variation = (float)(temp_readings[i] - temp_readings[i - 1]) / 10.0f;
-          if (variation < 0) variation = -variation;
-          if (variation > max_variation) max_variation = variation;
-      }
-      
-      int16_t first_c = temp_readings[0] / 10;
-      int16_t first_frac = temp_readings[0] % 10;
-      if (first_frac < 0) first_frac = -first_frac;
-      int16_t last_c = temp_readings[TEMP_SAMPLE_COUNT - 1] / 10;
-      int16_t last_frac = temp_readings[TEMP_SAMPLE_COUNT - 1] % 10;
-      if (last_frac < 0) last_frac = -last_frac;
-      
-      printf("\r\nDie Temperature Results:\r\n");
-      printf("  Range: %d.%d C - %d.%d C\r\n", first_c, first_frac, last_c, last_frac);
-      printf("  Max consecutive variation: %.2f C\r\n", max_variation);
-      
-      if (max_variation <= TEMP_STABILITY_DIE_TOL_F)
-      {
-          printf("  Stability: PASS (<= %.1f C)\r\n", TEMP_STABILITY_DIE_TOL_F);
-      }
-      else
-      {
-          printf("  Stability: FAIL (> %.1f C)\r\n", TEMP_STABILITY_DIE_TOL_F);
-      }
-  }
-
-  /* ============================================ */
-  /* Temperature Stability Test - External NTC    */
-  /* ============================================ */
-  printf("\r\n========================================\r\n");
-  printf("Testing external NTC temperature (TEMP_SEL=1)\r\n");
-  printf("========================================\r\n");
-
-  if (!bq76920_select_temperature_source(&bms, true))
-  {
-      printf("ERROR: Failed to select external NTC!\r\n");
-  }
-  else
-  {
-      HAL_Delay(TEMP_MODE_SWITCH_DELAY_MS);  /* Per datasheet: delay after mode switch */
-      
-      printf("Reading external temperature %d times...\r\n", TEMP_SAMPLE_COUNT);
-      for (int i = 0; i < TEMP_SAMPLE_COUNT; i++)
-      {
-          if (bq76920_read_temperature(&bms))
-          {
-              temp_readings[i] = bms.temp_tenths;
-              int16_t temp_c = temp_readings[i] / 10;
-              int16_t temp_frac = temp_readings[i] % 10;
-              if (temp_frac < 0) temp_frac = -temp_frac;
-              printf("  Read %d: %d.%d C\r\n", i + 1, temp_c, temp_frac);
-          }
-          else
-          {
-              printf("  Read %d: ERROR!\r\n", i + 1);
-          }
-          HAL_Delay(TEMP_SAMPLE_INTERVAL_MS);
-      }
-      
-      max_variation = 0.0f;
-      for (int i = 1; i < TEMP_SAMPLE_COUNT; i++)
-      {
-          float variation = (float)(temp_readings[i] - temp_readings[i - 1]) / 10.0f;
-          if (variation < 0) variation = -variation;
-          if (variation > max_variation) max_variation = variation;
-      }
-      
-      int16_t first_c = temp_readings[0] / 10;
-      int16_t first_frac = temp_readings[0] % 10;
-      if (first_frac < 0) first_frac = -first_frac;
-      int16_t last_c = temp_readings[TEMP_SAMPLE_COUNT - 1] / 10;
-      int16_t last_frac = temp_readings[TEMP_SAMPLE_COUNT - 1] % 10;
-      if (last_frac < 0) last_frac = -last_frac;
-      
-      printf("\r\nExternal NTC Results:\r\n");
-      printf("  Range: %d.%d C - %d.%d C\r\n", first_c, first_frac, last_c, last_frac);
-      printf("  Max consecutive variation: %.2f C\r\n", max_variation);
-
-      if (max_variation <= TEMP_STABILITY_NTC_TOL_F)
-      {
-          printf("  Stability: PASS (<= %.1f C)\r\n", TEMP_STABILITY_NTC_TOL_F);
-      }
-      else
-      {
-          printf("  Stability: FAIL (> %.1f C)\r\n", TEMP_STABILITY_NTC_TOL_F);
-      }
-  }
-
-  /* Switch back to die temperature for normal operation */
-  //bq76920_select_temperature_source(&bms, false);
-  
-  printf("\r\n========================================\r\n");
-  printf("Starting continuous voltage measurements...\r\n");
-  printf("========================================\r\n");
+  /* Start the status print timer NOW so the first bms_print_status call
+   * happens BMS_PRINT_INTERVAL_MS (10s) after init, not at t=0.
+   * Without this, last_print_ms=0 and the first loop iteration fires
+   * immediately because HAL_GetTick() >= USB_CONNECT_DELAY_MS = 10000. */
+  g_bms.last_print_ms = HAL_GetTick();
 
   /* USER CODE END 2 */
 
@@ -279,39 +154,23 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if (bq76920_read_all_voltages(&bms))
+
+    /* Run one tick of the BMS state machine.
+     * This is non-blocking — all timing is handled internally via HAL_GetTick().
+     * Normal cycle: IDLE -> MEASURE -> CHECK_FAULTS -> IDLE (every 2 seconds) */
+    bms_run(&g_bms);
+
+    /* Periodic full status report */
+    if ((HAL_GetTick() - g_bms.last_print_ms) >= BMS_PRINT_INTERVAL_MS)
     {
-        printf("Cell 1: %4d mV  Cell 2: %4d mV  Cell 3: %4d mV Cell 4: %4d mV Cell 5: %4d mV\r\n",
-                bms.cell_mV[0], bms.cell_mV[1], bms.cell_mV[2], bms.cell_mV[3], bms.cell_mV[4]);
-    }
-    else
-    {
-        printf("ERROR: Failed to read cell voltages!\r\n");
+        bms_print_status(&g_bms);
+        g_bms.last_print_ms = HAL_GetTick();
     }
 
-    if (bq76920_read_pack_voltage(&bms))
-    {
-        printf("Pack:  %4d mV\r\n", bms.pack_mV);
-    }
-    else
-    {
-        printf("ERROR: Failed to read pack voltage!\r\n");
-    }
+    /* LED heartbeat — 1Hz blink to show firmware is running */
+    HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
+    HAL_Delay(LED_HEARTBEAT_MS);
 
-    if (bq76920_read_temperature(&bms))
-    {
-        int16_t temp_c = bms.temp_tenths / 10;
-        int16_t temp_frac = bms.temp_tenths % 10;
-        if (temp_frac < 0) temp_frac = -temp_frac;
-        printf("Temp:  %d.%d C\r\n", temp_c, temp_frac);
-    }
-    else
-    {
-        printf("ERROR: Failed to read temperature!\r\n");
-    }
-
-    printf("----------------------------------------\r\n");
-    HAL_Delay(MAIN_LOOP_DELAY_MS);
   }
   /* USER CODE END 3 */
 }
