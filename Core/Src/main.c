@@ -32,9 +32,16 @@
 
 /* USER CODE END PTD */
 
-/* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define USB_CONNECT_DELAY_MS        10000U  /**< Wait for USB terminal to connect */
+#define TEMP_MODE_SWITCH_DELAY_MS    2000U  /**< Per datasheet: delay after temp source change */
+#define ADC_STABILISE_DELAY_MS        250U  /**< Per datasheet: ADC stabilisation after enable */
+#define TEMP_SAMPLE_COUNT              10   /**< Number of temperature readings per stability test */
+#define TEMP_STABILITY_DIE_TOL_F      0.5f /**< Die temperature max consecutive variation (deg C) */
+#define TEMP_STABILITY_NTC_TOL_F      0.3f /**< NTC temperature max consecutive variation (deg C) */
+#define TEMP_SAMPLE_INTERVAL_MS       500U  /**< Delay between temperature samples */
+#define MAIN_LOOP_DELAY_MS           2000U  /**< Main measurement loop period */
+#define ERROR_BLINK_DELAY_MS          100U  /**< Fast LED blink period on fatal error */
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -71,9 +78,8 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   bq76920_handle_t bms = {0};
-  int16_t temp_readings[10];
+  int16_t temp_readings[TEMP_SAMPLE_COUNT];
   float max_variation = 0.0f;
-  float stability_tolerance = 0.5f;
 
   /* USER CODE END 1 */
 
@@ -99,7 +105,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   
-  HAL_Delay(10000); // Time to connect USB and open terminal
+  HAL_Delay(USB_CONNECT_DELAY_MS);
   printf("\r\n\r\n");
   printf("========================================\r\n");
   printf("BQ76920 BMS Integration Test\r\n");
@@ -113,7 +119,7 @@ int main(void)
       while (1)
       {
           HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
-          HAL_Delay(500);
+          HAL_Delay(TEMP_SAMPLE_INTERVAL_MS);
       }
   }
   printf("Driver initialized successfully.\r\n");
@@ -125,12 +131,12 @@ int main(void)
       while (1)
       {
           HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_PIN);
-          HAL_Delay(100);
+          HAL_Delay(ERROR_BLINK_DELAY_MS);
       }
   }
   printf("ADC enabled.\r\n");
   printf("Waiting for ADC to stabilize...\r\n");
-  HAL_Delay(250);   /* 250ms per datasheet for cell voltage stabilization */
+  HAL_Delay(ADC_STABILISE_DELAY_MS);
 
   /* ============================================ */
   /* Temperature Stability Test - Die Temperature */
@@ -145,10 +151,10 @@ int main(void)
   }
   else
   {
-      HAL_Delay(2000);  /* 2s per datasheet for mode switch */
+      HAL_Delay(TEMP_MODE_SWITCH_DELAY_MS);  /* Per datasheet: delay after mode switch */
       
-      printf("Reading die temperature 10 times...\r\n");
-      for (int i = 0; i < 10; i++)
+      printf("Reading die temperature %d times...\r\n", TEMP_SAMPLE_COUNT);
+      for (int i = 0; i < TEMP_SAMPLE_COUNT; i++)
       {
           if (bq76920_read_temperature(&bms))
           {
@@ -162,12 +168,12 @@ int main(void)
           {
               printf("  Read %d: ERROR!\r\n", i + 1);
           }
-          HAL_Delay(500);
+          HAL_Delay(TEMP_SAMPLE_INTERVAL_MS);
       }
       
       /* Calculate stability (maximum consecutive variation) */
       max_variation = 0.0f;
-      for (int i = 1; i < 10; i++)
+      for (int i = 1; i < TEMP_SAMPLE_COUNT; i++)
       {
           float variation = (float)(temp_readings[i] - temp_readings[i - 1]) / 10.0f;
           if (variation < 0) variation = -variation;
@@ -177,21 +183,21 @@ int main(void)
       int16_t first_c = temp_readings[0] / 10;
       int16_t first_frac = temp_readings[0] % 10;
       if (first_frac < 0) first_frac = -first_frac;
-      int16_t last_c = temp_readings[9] / 10;
-      int16_t last_frac = temp_readings[9] % 10;
+      int16_t last_c = temp_readings[TEMP_SAMPLE_COUNT - 1] / 10;
+      int16_t last_frac = temp_readings[TEMP_SAMPLE_COUNT - 1] % 10;
       if (last_frac < 0) last_frac = -last_frac;
       
       printf("\r\nDie Temperature Results:\r\n");
       printf("  Range: %d.%d C - %d.%d C\r\n", first_c, first_frac, last_c, last_frac);
       printf("  Max consecutive variation: %.2f C\r\n", max_variation);
       
-      if (max_variation <= stability_tolerance)
+      if (max_variation <= TEMP_STABILITY_DIE_TOL_F)
       {
-          printf("  Stability: PASS (<= %.1f C)\r\n", stability_tolerance);
+          printf("  Stability: PASS (<= %.1f C)\r\n", TEMP_STABILITY_DIE_TOL_F);
       }
       else
       {
-          printf("  Stability: FAIL (> %.1f C)\r\n", stability_tolerance);
+          printf("  Stability: FAIL (> %.1f C)\r\n", TEMP_STABILITY_DIE_TOL_F);
       }
   }
 
@@ -208,10 +214,10 @@ int main(void)
   }
   else
   {
-      HAL_Delay(2000);  /* 2s per datasheet for mode switch */
+      HAL_Delay(TEMP_MODE_SWITCH_DELAY_MS);  /* Per datasheet: delay after mode switch */
       
-      printf("Reading external temperature 10 times...\r\n");
-      for (int i = 0; i < 10; i++)
+      printf("Reading external temperature %d times...\r\n", TEMP_SAMPLE_COUNT);
+      for (int i = 0; i < TEMP_SAMPLE_COUNT; i++)
       {
           if (bq76920_read_temperature(&bms))
           {
@@ -225,12 +231,11 @@ int main(void)
           {
               printf("  Read %d: ERROR!\r\n", i + 1);
           }
-          HAL_Delay(500);
+          HAL_Delay(TEMP_SAMPLE_INTERVAL_MS);
       }
       
-      /* Calculate stability (maximum consecutive variation) */
       max_variation = 0.0f;
-      for (int i = 1; i < 10; i++)
+      for (int i = 1; i < TEMP_SAMPLE_COUNT; i++)
       {
           float variation = (float)(temp_readings[i] - temp_readings[i - 1]) / 10.0f;
           if (variation < 0) variation = -variation;
@@ -240,22 +245,21 @@ int main(void)
       int16_t first_c = temp_readings[0] / 10;
       int16_t first_frac = temp_readings[0] % 10;
       if (first_frac < 0) first_frac = -first_frac;
-      int16_t last_c = temp_readings[9] / 10;
-      int16_t last_frac = temp_readings[9] % 10;
+      int16_t last_c = temp_readings[TEMP_SAMPLE_COUNT - 1] / 10;
+      int16_t last_frac = temp_readings[TEMP_SAMPLE_COUNT - 1] % 10;
       if (last_frac < 0) last_frac = -last_frac;
       
       printf("\r\nExternal NTC Results:\r\n");
       printf("  Range: %d.%d C - %d.%d C\r\n", first_c, first_frac, last_c, last_frac);
       printf("  Max consecutive variation: %.2f C\r\n", max_variation);
-      
-      /* External NTC tolerance is tighter (±0.3°C) */
-      if (max_variation <= 0.3f)
+
+      if (max_variation <= TEMP_STABILITY_NTC_TOL_F)
       {
-          printf("  Stability: PASS (<= 0.3 C)\r\n");
+          printf("  Stability: PASS (<= %.1f C)\r\n", TEMP_STABILITY_NTC_TOL_F);
       }
       else
       {
-          printf("  Stability: FAIL (> 0.3 C)\r\n");
+          printf("  Stability: FAIL (> %.1f C)\r\n", TEMP_STABILITY_NTC_TOL_F);
       }
   }
 
@@ -307,7 +311,7 @@ int main(void)
     }
 
     printf("----------------------------------------\r\n");
-    HAL_Delay(2000);
+    HAL_Delay(MAIN_LOOP_DELAY_MS);
   }
   /* USER CODE END 3 */
 }

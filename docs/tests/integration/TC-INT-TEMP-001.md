@@ -88,9 +88,9 @@ Temperature monitoring is essential for battery safety (overtemperature protecti
 
 | Test Case | Expected Result | Actual Result |
 |-----------|----------------|---------------|
-| Die temperature reads (sanity) | 25°C - 65°C | 28.3°C ✅ |
+| Die temperature reads (sanity) | 25°C - 65°C | 30.7°C ✅ |
 | Die temperature stability | Variation < ±0.5°C | 0.0°C (perfect) ✅ |
-| External NTC reads (sanity) | 20°C - 35°C | 29.9°C ✅ |
+| External NTC reads (sanity) | 20°C - 35°C | 29.5°C ✅ |
 | External NTC stability | Variation < ±0.3°C | 0.0°C (perfect) ✅ |
 | I2C errors | None | No errors ✅ |
 
@@ -128,10 +128,11 @@ Temperature monitoring is essential for battery safety (overtemperature protecti
 
 | Date | Executed By | Result | Notes |
 |------|-------------|--------|-------|
-| 2026-05-15 | Cameron Burnett | Pass | Die temperature: 28.3°C, perfect stability (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | External NTC: 29.9°C, perfect stability (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | I2C communication: No errors (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | Mode switch: Works correctly (PASS) |
+| 2026-05-15 | Cameron Burnett | Pass | Die temperature: 28.3°C, perfect stability (superseded) |
+| 2026-05-19 | Cameron Burnett | Pass | Die temperature: 30.7°C, perfect stability (PASS) |
+| 2026-05-19 | Cameron Burnett | Pass | External NTC: 29.5°C, perfect stability (PASS) |
+| 2026-05-19 | Cameron Burnett | Pass | I2C communication: No errors (PASS) |
+| 2026-05-19 | Cameron Burnett | Pass | Mode switch: Works correctly (PASS) |
 
 ## Test Output
 
@@ -143,38 +144,45 @@ ADC enabled.
 Waiting for ADC to stabilize...
 
 ========================================
+Testing die temperature (TEMP_SEL=0)
 Reading die temperature 10 times...
-  Read 1: 28.3 C
-  Read 2: 28.3 C
-  Read 3: 28.3 C
-  Read 4: 28.3 C
-  Read 5: 28.3 C
-  Read 6: 28.3 C
-  Read 7: 28.3 C
-  Read 8: 28.3 C
-  Read 9: 28.3 C
-  Read 10: 28.3 C
+  Read 1: 30.7 C
+  Read 2: 30.7 C
+  Read 3: 30.7 C
+  Read 4: 30.7 C
+  Read 5: 30.7 C
+  Read 6: 30.7 C
+  Read 7: 30.7 C
+  Read 8: 30.7 C
+  Read 9: 30.7 C
+  Read 10: 30.7 C
 
-  Range: 28.3 C - 28.3 C
+  Range: 30.7 C - 30.7 C
+  Max consecutive variation: 0.00 C
+  Stability: PASS (<= 0.5 C)
 
+Testing external NTC temperature (TEMP_SEL=1)
 Reading external temperature 10 times...
-  Read 1: 29.9 C
-  Read 2: 29.9 C
-  Read 3: 29.9 C
-  Read 4: 29.9 C
-  Read 5: 29.9 C
-  Read 6: 29.9 C
-  Read 7: 29.9 C
-  Read 8: 29.9 C
-  Read 9: 29.9 C
-  Read 10: 29.9 C
+  Read 1: 29.5 C
+  Read 2: 29.5 C
+  Read 3: 29.5 C
+  Read 4: 29.5 C
+  Read 5: 29.5 C
+  Read 6: 29.5 C
+  Read 7: 29.5 C
+  Read 8: 29.5 C
+  Read 9: 29.5 C
+  Read 10: 29.5 C
 
-  Range: 29.9 C - 29.9 C
-----------------------------------------
+  Range: 29.5 C - 29.5 C
+  Max consecutive variation: 0.00 C
+  Stability: PASS (<= 0.3 C)
+========================================
 ```
 
 ## Change History
 
 | Version | Date | Author | Description |
 |---------|------|--------|-------------|
-| 1.0 | 2026-05-15 | Cameron Burnett | Initial creation - test passed
+| 1.0 | 2026-05-15 | Cameron Burnett | Initial creation |
+| 1.1 | 2026-05-19 | Cameron Burnett | Updated actual results: die 30.7°C, NTC 29.5°C (integer LUT driver) |

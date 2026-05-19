@@ -16,10 +16,8 @@
 /*                              Constants                                     */
 /*============================================================================*/
 
-#define BQ76920_I2C_ADDR_7BIT       0x08U   /**< 7-bit I2C address */
-#define BQ76920_I2C_ADDR_8BIT       (0x08U << 1) /**< 8-bit I2C address for HAL */
-#define BQ76920_MEASURE_INT_TEMP    false   /**< Set to true to use external TS1 thermistor for temperature, false for internal die temp */
-#define BQ76920_MEASURE_EXT_TEMP    true    /**< Set to true to use external TS1 thermistor for temperature, false for internal die temp */
+#define BQ76920_I2C_ADDR_7BIT       0x08U         /**< 7-bit I2C address */
+#define BQ76920_I2C_ADDR_8BIT       (0x08U << 1U) /**< 8-bit I2C address for HAL (left-shifted for R/W bit) */
 
 /*============================================================================*/
 /*                              Register Addresses                            */
@@ -104,8 +102,8 @@ typedef struct {
     uint16_t pack_mV;                              /**< Last read pack voltage (mV) */
     int16_t current_mA;                            /**< Last read current (mA) */
     int16_t temp_tenths;                           /**< Last read temperature (0.1°C) */
-    uint16_t adc_gain;                             /* µV/LSB (365-396) */
-    int8_t adc_offset;                             /* mV (-128 to +127) */
+    uint16_t adc_gain;                             /**< ADC gain in uV/LSB (factory calibrated, range 365-396) */
+    int8_t adc_offset;                             /**< ADC offset in mV (factory calibrated, range -128 to +127) */
 } bq76920_handle_t;
 
 /*============================================================================*/

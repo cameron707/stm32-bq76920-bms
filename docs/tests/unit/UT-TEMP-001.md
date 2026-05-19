@@ -9,9 +9,18 @@
 | Test Level | Unit |
 | Priority | High |
 | Status | Pass |
-| Version | 1.0 |
-| Date | 2026-05-15 |
+| Version | 2.0 |
+| Date | 2026-05-19 |
 | Author | Cameron Burnett |
+
+---
+
+## Change History
+
+| Version | Date | Author | Description |
+|---------|------|--------|-------------|
+| 1.0 | 2026-05-15 | Cameron Burnett | Initial — Steinhart-Hart floating-point implementation |
+| 2.0 | 2026-05-19 | Cameron Burnett | Rewritten for integer LUT approach; added boundary and interpolation tests; removed math.h dependency |
 
 ---
 
@@ -25,124 +34,145 @@
 
 ## Statement
 
-The `bq76920_read_temperature()` function shall convert raw ADC counts from the BQ76920 TS1 register to temperature in 0.1°C units, supporting both external NTC thermistor (TEMP_SEL=1) and internal die temperature (TEMP_SEL=0) modes.
+The `bq76920_read_temperature()` function shall convert raw ADC counts from the BQ76920 TS1 register to temperature in 0.1°C units, supporting both external NTC thermistor (TEMP_SEL=1) and internal die temperature (TEMP_SEL=0) modes, using integer arithmetic only (no floating point, no math library).
 
 ## Rationale
 
-Accurate temperature monitoring is essential for battery safety and protection features. This unit test verifies the conversion formulas in isolation on the host PC before hardware integration, ensuring both external thermistor and die temperature calculations are mathematically correct.
+Accurate temperature monitoring is essential for battery safety (overtemperature protection). This unit test verifies both conversion algorithms in isolation on the host PC before hardware integration.
+
+**v2.0 rationale:** The original Steinhart-Hart floating-point NTC calculation was replaced with an integer LUT + linear interpolation approach (MISRA compliance, no FPU on STM32F103). The die temperature formula was also converted to integer fixed-point. This version tests both new algorithms. The LUT was generated from the same Steinhart-Hart coefficients, so results are consistent within ±1°C across the full operating range.
+
+## Test Scope
+
+This is a **unit test** that verifies only the mathematical conversion functions. It does **not** test:
+- I2C communication with the BQ76920
+- Reading ADC GAIN and OFFSET from device EEPROM (gain is supplied directly as a test parameter)
+- Absolute hardware accuracy
+
+Those factors are verified in TC-INT-TEMP-001 and TC-SYS-TEMP-001.
 
 ## Acceptance Criteria
 
-- External NTC conversion: 4072 counts → 27.6°C (±0.5°C tolerance)
-- Die temperature at V25 calibration: 3141 counts → 25.0°C (±0.5°C tolerance)
-- Die temperature at 3400 counts: 3400 counts → 1.3°C (±0.5°C tolerance)
-- All test cases pass within specified tolerance
+### NTC Thermistor Tests (TEMP_SEL=1)
 
-**Tolerance Justification:** ±0.5°C accounts for floating-point to integer rounding, integer math precision, and GAIN value variations (382 nominal vs actual factory-calibrated value).
+| ID | Input | Expected | Tolerance | Justification |
+|----|-------|----------|-----------|---------------|
+| T1 | rts=10220 Ω | 24.5°C | ±0.0°C | Direct LUT entry — must be exact |
+| T2 | rts=9170 Ω | 27.0°C | ±0.0°C | Direct LUT entry — must be exact |
+| T3 | rts=8710 Ω | 28.2°C | ±0.2°C | Interpolated — integer rounding |
+| T4 | raw=4072, gain=377 | 28.2°C | ±1.0°C | LUT vs Steinhart-Hart ref (27.6°C) within 0.6°C |
+| T5 | rts=150000 Ω | -20.5°C | ±0.0°C | Above range — must clamp exactly |
+| T6 | rts=800 Ω | 80.1°C | ±0.0°C | Below range — must clamp exactly |
+
+### Die Temperature Tests (TEMP_SEL=0)
+
+| ID | Input | Expected | Tolerance | Justification |
+|----|-------|----------|-----------|---------------|
+| T7 | raw=3183, gain=377 | 25.0°C | ±0.3°C | Integer div: 3183×377/1000=1199mV (not exactly 1200) |
+| T8 | raw=3120, gain=377 | 30.7°C | ±0.0°C | Derived from actual hardware output — exact |
+| T9 | raw=3050, gain=377 | 37.1°C | ±0.0°C | Analytically verified — exact |
 
 ## Preconditions
 
 | # | Description |
 |---|-------------|
 | 1 | Test compiled on host PC (not on STM32 hardware) |
-| 2 | Conversion formulas extracted from `bq76920.c` |
-| 3 | Math library available (for log() and pow()) |
-| 4 | Test vectors from datasheet or known theoretical values |
-
-## Test Data
-
-| Data Element | Value | Purpose |
-|--------------|-------|---------|
-| External NTC raw counts | 4072 | Test external thermistor conversion |
-| Die temperature raw counts (V25) | 3141 | Test die temperature at calibration point |
-| Die temperature raw counts | 3400 | Test die temperature at typical operating point |
+| 2 | LUT and conversion functions copied verbatim from `bq76920.c` — if driver changes, update test |
+| 3 | Standard C compiler with `<stdint.h>` and `<stdbool.h>` — no math library required |
 
 ## Test Steps
 
 | Step | Action | Expected Result |
 |------|--------|-----------------|
-| 1 | Compile `ut_temp_001.c` on host PC with math library | Compilation succeeds with no errors |
-| 2 | Run `./ut_temp_001.exe` | Program executes without crashes |
-| 3 | Verify external NTC conversion | 4072 counts → 27.6°C ±0.5°C |
-| 4 | Verify die temperature at V25 | 3141 counts → 25.0°C ±0.5°C |
-| 5 | Verify die temperature at 3400 counts | 3400 counts → 1.3°C ±0.5°C |
+| 1 | Compile: `gcc ut_temp_001.c -o ut_temp_001` | No errors or warnings |
+| 2 | Run: `./ut_temp_001` | Executes without crashes |
+| 3–8 | NTC LUT tests T1–T6 | All pass within tolerance |
+| 9–11 | Die temperature tests T7–T9 | All pass within tolerance |
 
 ## Expected Results
 
-All test cases pass within the specified ±0.5°C tolerance:
-- External NTC: 27.6°C (0.0°C difference from expected)
-- Die V25: 25.2°C (0.2°C difference from expected)
-- Die 3400: 1.6°C (0.3°C difference from expected)
-
-The small differences (0.2-0.3°C) are due to:
-- Use of 382 µV/LSB nominal GAIN vs actual factory-calibrated GAIN (377 µV/LSB)
-- Integer division rounding in the conversion function
-- These differences are mathematically expected and acceptable for a unit test
+| Test | Result | Expected | Diff | Pass? |
+|------|--------|----------|------|-------|
+| T1: rts=10220 | 24.5°C | 24.5°C | 0.0°C | Yes |
+| T2: rts=9170 | 27.0°C | 27.0°C | 0.0°C | Yes |
+| T3: rts=8710 | 28.2°C | 28.2°C | 0.0°C | Yes (±0.2°C) |
+| T4: raw=4072, gain=377 | 28.2°C | 28.2°C | 0.0°C | Yes (±1.0°C) |
+| T5: rts=150000 | -20.5°C | -20.5°C | 0.0°C | Yes |
+| T6: rts=800 | 80.1°C | 80.1°C | 0.0°C | Yes |
+| T7: raw=3183, gain=377 | 25.2°C | 25.0°C | 0.2°C | Yes (±0.3°C) |
+| T8: raw=3120, gain=377 | 30.7°C | 30.7°C | 0.0°C | Yes |
+| T9: raw=3050, gain=377 | 37.1°C | 37.1°C | 0.0°C | Yes |
 
 ## Post-conditions
 
 | # | Description |
 |---|-------------|
-| 1 | No memory leaks during test execution |
-| 2 | Test output saved to `test/ut_temp_001_output.txt` for documentation |
-| 3 | All test resources released |
-
-## Verification Method
-
-| Test | Method | Description |
-|------|--------|-------------|
-| External NTC conversion | Analysis | Mathematical verification of Steinhart-Hart equation using known input/output pairs |
-| Die temperature V25 | Analysis | Mathematical verification of datasheet calibration formula |
-| Die temperature 3400 | Analysis | Mathematical verification of linear temperature coefficient |
-
-**Overall Method:** Test - Unit test executed on host PC with compiled C code. Results compared against expected values calculated from datasheet formulas.
+| 1 | Test output saved to `tests/unit/ut_temp_001_output.txt` |
 
 ## References
 
-| Document Type | Reference |
-|---------------|-----------|
-| Requirements | `docs/SRS.md` - REQ-FUNC-003 |
-| Design | `docs/SDD.md` - Section 5.3 (Data Conversion Algorithms) |
-| BQ76920 Datasheet | Section 8.3.1.1.4 (External Thermistor), Section 8.3.1.1.5 (Die Temperature Monitor) |
-| Related Test Cases | TC-INT-TEMP-001, TC-SYS-TEMP-001 |
+| Document | Reference |
+|----------|-----------|
+| Requirements | `docs/SRS.md` — REQ-FUNC-003 |
+| Design | `docs/SDD.md` — Section 5.3 (Temperature Conversion) |
+| BQ76920 Datasheet | Section 8.3.1.1.4 (External Thermistor), 8.3.1.1.5 (Die Temperature) |
+| Related Tests | TC-INT-TEMP-001, TC-SYS-TEMP-001 |
 
 ## Test Execution Log
 
 | Date | Executed By | Result | Notes |
 |------|-------------|--------|-------|
-| 2026-05-15 | Cameron Burnett | Pass | External NTC: 27.6°C |
-| 2026-05-15 | Cameron Burnett | Pass | Die V25: 25.2°C (within 0.5°C) |
-| 2026-05-15 | Cameron Burnett | Pass | Die 3400: 1.6°C (within 0.5°C) |
+| 2026-05-15 | Cameron Burnett | Pass (v1.0) | Steinhart-Hart floating-point — superseded by v2.0 |
+| 2026-05-19 | Cameron Burnett | Pass (v2.0) | Integer LUT — 9/9 passed, 0 failed |
 
 ## Test Output
 
 ```text
-----------------------------------------
+==================================================
 UT-TEMP-001: Temperature Conversion Unit Test
-----------------------------------------
+==================================================
 
-Test 1: External NTC conversion
---------------------------------
-  Raw: 4072 -> Result: 27.6C (Expected: 27.6C)
-  Result: PASS
+--- NTC Thermistor Tests (integer LUT + interpolation) ---
 
-Test 2: Die temperature at V25 (1.200V)
-----------------------------------------
-  Raw: 3141 -> Result: 25.2C (Expected: 25.0C)
-  Result: PASS (within tolerance)
+  T1: rts=10220 ohm -> exact LUT match (24.5 C)
+    Result: 24.5 C  Expected: 24.5 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
 
-Test 3: Die temperature at 3400 counts
------------------------------------------------
-  Raw: 3400 -> Result: 1.6C
-  Result: PASS (within tolerance)
+  T2: rts=9170 ohm -> exact LUT match (27.0 C)
+    Result: 27.0 C  Expected: 27.0 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
 
-----------------------------------------
-Test Summary: 3 passed, 0 failed
-----------------------------------------
+  T3: rts=8710 ohm -> interpolated (28.2 C)
+    Result: 28.2 C  Expected: 28.2 C  Diff: 0.0 C  Tol: +/-0.2 C
+    PASS
+
+  T4: raw=4072, gain=377 -> hardware vector (LUT: 28.2C, S-H ref: 27.6C)
+    Result: 28.2 C  Expected: 28.2 C  Diff: 0.0 C  Tol: +/-1.0 C
+    PASS
+
+  T5: rts=150000 ohm -> above range, clamp to -20.5 C
+    Result: -20.5 C  Expected: -20.5 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
+
+  T6: rts=800 ohm -> below range, clamp to 80.1 C
+    Result: 80.1 C  Expected: 80.1 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
+
+--- Die Temperature Tests (integer fixed-point) ---
+
+  T7: raw=3183, gain=377 -> near V25 calibration (~25.0 C)
+    Result: 25.2 C  Expected: 25.0 C  Diff: 0.2 C  Tol: +/-0.3 C
+    PASS
+
+  T8: raw=3120, gain=377 -> actual hardware reading (30.7 C)
+    Result: 30.7 C  Expected: 30.7 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
+
+  T9: raw=3050, gain=377 -> colder die (37.1 C)
+    Result: 37.1 C  Expected: 37.1 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
+
+==================================================
+Test Summary: 9 passed, 0 failed
+==================================================
 ```
-
-## Change History
-
-| Version | Date | Author | Description |
-|---------|------|--------|-------------|
-| 1.0 | 2026-05-15 | Cameron Burnett | Initial creation - test passed

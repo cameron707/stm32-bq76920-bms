@@ -1,22 +1,47 @@
-========================================
+==================================================
 UT-TEMP-001: Temperature Conversion Unit Test
-========================================
+==================================================
 
-Test 1: External NTC conversion
---------------------------------
-  Raw: 4072 -> Result: 27.6C (Expected: 27.6C)
-  Result: PASS (within expected range)
+--- NTC Thermistor Tests (integer LUT + interpolation) ---
 
-Test 2: Die temperature at V25 (1.200V)
-----------------------------------------
-  Raw: 3141 -> Result: 25.2C (Expected: 25.0C)
-  Result: PASS
+  T1: rts=10220 ohm -> exact LUT match (24.5 C)
+    Result: 24.5 C  Expected: 24.5 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
 
-Test 3: Die temperature at 3400 counts
------------------------------------------------
-  Raw: 3400 -> Result: 1.6C
-  Result: PASS
+  T2: rts=9170 ohm -> exact LUT match (27.0 C)
+    Result: 27.0 C  Expected: 27.0 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
 
-========================================
-Test Summary: 3 passed, 0 failed
-========================================
+  T3: rts=8710 ohm -> interpolated (28.2 C)
+    Result: 28.2 C  Expected: 28.2 C  Diff: 0.0 C  Tol: +/-0.2 C
+    PASS
+
+  T4: raw=4072, gain=377 -> hardware vector (LUT: 28.2C, S-H ref: 27.6C)
+    Result: 28.2 C  Expected: 28.2 C  Diff: 0.0 C  Tol: +/-1.0 C
+    PASS
+
+  T5: rts=150000 ohm -> above range, clamp to -20.5 C
+    Result: -20.5 C  Expected: -20.5 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
+
+  T6: rts=800 ohm -> below range, clamp to 80.1 C
+    Result: 80.1 C  Expected: 80.1 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
+
+--- Die Temperature Tests (integer fixed-point) ---
+
+  T7: raw=3183, gain=377 -> near V25 calibration (~25.0 C)
+    Result: 25.2 C  Expected: 25.0 C  Diff: 0.2 C  Tol: +/-0.3 C
+    PASS
+
+  T8: raw=3120, gain=377 -> actual hardware reading (30.7 C)
+    Result: 30.7 C  Expected: 30.7 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
+
+  T9: raw=3050, gain=377 -> colder die (37.1 C)
+    Result: 37.1 C  Expected: 37.1 C  Diff: 0.0 C  Tol: +/-0.0 C
+    PASS
+
+==================================================
+Test Summary: 9 passed, 0 failed
+==================================================

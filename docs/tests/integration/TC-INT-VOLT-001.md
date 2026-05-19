@@ -78,12 +78,12 @@ Accurate cell voltage monitoring is the foundation of all BMS protection feature
 
 | Test Case | Expected Result | Actual Result |
 |-----------|----------------|---------------|
-| Cell 1 reads | 2500-4200 mV | 3619-3622 mV ✅ |
-| Cell 2 reads | 2500-4200 mV | 3606-3609 mV ✅ |
-| Cell 3 reads | 2500-4200 mV | 3611-3613 mV ✅ |
-| Cell 4 reads | 2500-4200 mV | 3615-3617 mV ✅ |
-| Cell 5 reads | 2500-4200 mV | 3613-3616 mV ✅ |
-| Pack voltage | ≈ sum of cells | 18066-18078 mV (5 × ~3613 mV) ✅ |
+| Cell 1 reads | 2500-4200 mV | 3607 mV ✅ |
+| Cell 2 reads | 2500-4200 mV | 3593 mV ✅ |
+| Cell 3 reads | 2500-4200 mV | 3598 mV ✅ |
+| Cell 4 reads | 2500-4200 mV | 3602 mV ✅ |
+| Cell 5 reads | 2500-4200 mV | 3599 mV ✅ |
+| Pack voltage | ≈ sum of cells | 18000 mV (5 × ~3600 mV) ✅ |
 | I2C errors | None | No errors ✅ |
 | Reading stability | ±10 mV | Stable ✅ |
 
@@ -119,12 +119,13 @@ Accurate cell voltage monitoring is the foundation of all BMS protection feature
 
 | Date | Executed By | Result | Notes |
 |------|-------------|--------|-------|
-| 2026-05-15 | Cameron Burnett | Pass | Cell 1: 3622 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | Cell 2: 3609 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | Cell 3: 3613 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | Cell 4: 3617 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | Cell 5: 3615 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | Pack: 18078 mV (PASS) |
+| 2026-05-15 | Cameron Burnett | Pass | Session 1 — 3 cells visible (superseded) |
+| 2026-05-19 | Cameron Burnett | Pass | Cell 1: 3607 mV (PASS) |
+| 2026-05-19 | Cameron Burnett | Pass | Cell 2: 3593 mV (PASS) |
+| 2026-05-19 | Cameron Burnett | Pass | Cell 3: 3598 mV (PASS) |
+| 2026-05-19 | Cameron Burnett | Pass | Cell 4: 3602 mV (PASS) |
+| 2026-05-19 | Cameron Burnett | Pass | Cell 5: 3599 mV (PASS) |
+| 2026-05-19 | Cameron Burnett | Pass | Pack: 18000 mV (PASS) |
 
 ## Test Output
 
@@ -137,14 +138,21 @@ ADC Gain: 377 uV/LSB, ADC Offset: 46 mV
 ADC enabled.
 Waiting for ADC to stabilize...
 
-Cell 1: 3622 mV  Cell 2: 3609 mV  Cell 3: 3613 mV  Cell 4: 3617 mV  Cell 5: 3615 mV
-Pack:  18078 mV
+Cell 1 raw:  9446, calculated: 3607 mV
+Cell 2 raw:  9410, calculated: 3593 mV
+Cell 3 raw:  9422, calculated: 3598 mV
+Cell 4 raw:  9433, calculated: 3602 mV
+Cell 5 raw:  9426, calculated: 3599 mV
+Cell 1: 3607 mV  Cell 2: 3593 mV  Cell 3: 3598 mV Cell 4: 3602 mV Cell 5: 3599 mV
+Pack:  18000 mV
 
-Cell 1: 3622 mV  Cell 2: 3609 mV  Cell 3: 3613 mV  Cell 4: 3617 mV  Cell 5: 3616 mV
-Pack:  18078 mV
-
-Cell 1: 3622 mV  Cell 2: 3609 mV  Cell 3: 3613 mV  Cell 4: 3617 mV  Cell 5: 3615 mV
-Pack:  18078 mV
+Cell 1 raw:  9446, calculated: 3607 mV
+Cell 2 raw:  9410, calculated: 3593 mV
+Cell 3 raw:  9422, calculated: 3598 mV
+Cell 4 raw:  9433, calculated: 3602 mV
+Cell 5 raw:  9426, calculated: 3599 mV
+Cell 1: 3607 mV  Cell 2: 3593 mV  Cell 3: 3598 mV Cell 4: 3602 mV Cell 5: 3599 mV
+Pack:  18000 mV
 
 ----------------------------------------
 ```
@@ -153,4 +161,5 @@ Pack:  18078 mV
 
 | Version | Date | Author | Description |
 |---------|------|--------|-------------|
-| 1.0 | 2026-05-15 | Cameron Burnett | Initial creation - test passed
+| 1.0 | 2026-05-15 | Cameron Burnett | Initial creation |
+| 1.1 | 2026-05-19 | Cameron Burnett | Updated actual results: all 5 cells confirmed, pack 18000 mV |

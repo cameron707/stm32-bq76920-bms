@@ -47,6 +47,31 @@ Test 9: Actual hardware: Cell 3 (9434 counts -> 3602 mV)
   Result: 3602 mV, Expected: 3602 mV, Diff: 0 mV
   Result: PASS
 
+Test 10: Actual hardware: Cell 1 session 2 (9446 counts -> 3607 mV)
+  Input: counts= 9446, gain=377 uV/LSB, offset=  46 mV
+  Result: 3607 mV, Expected: 3607 mV, Diff: 0 mV
+  Result: PASS
+
+Test 11: Actual hardware: Cell 2 session 2 (9410 counts -> 3593 mV)
+  Input: counts= 9410, gain=377 uV/LSB, offset=  46 mV
+  Result: 3593 mV, Expected: 3593 mV, Diff: 0 mV
+  Result: PASS
+
+Test 12: Actual hardware: Cell 3 session 2 (9422 counts -> 3598 mV)
+  Input: counts= 9422, gain=377 uV/LSB, offset=  46 mV
+  Result: 3598 mV, Expected: 3598 mV, Diff: 0 mV
+  Result: PASS
+
+Test 13: Actual hardware: Cell 4 session 2 (9433 counts -> 3602 mV)
+  Input: counts= 9433, gain=377 uV/LSB, offset=  46 mV
+  Result: 3602 mV, Expected: 3602 mV, Diff: 0 mV
+  Result: PASS
+
+Test 14: Actual hardware: Cell 5 session 2 (9426 counts -> 3599 mV)
+  Input: counts= 9426, gain=377 uV/LSB, offset=  46 mV
+  Result: 3599 mV, Expected: 3599 mV, Diff: 0 mV
+  Result: PASS
+
 --------------------------------------------------
-Test Summary: 9 passed, 0 failed
+Test Summary: 14 passed, 0 failed
 --------------------------------------------------

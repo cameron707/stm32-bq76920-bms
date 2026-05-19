@@ -146,6 +146,46 @@ static const test_vector_t test_vectors[] = {
         .expected_mv = 3602,
         .tolerance_mv = 1,
         .description = "Actual hardware: Cell 3 (9434 counts -> 3602 mV)"
+    },
+    {
+        .counts = 9446,
+        .adc_gain = 377,
+        .adc_offset = 46,
+        .expected_mv = 3607,
+        .tolerance_mv = 1,
+        .description = "Actual hardware: Cell 1 session 2 (9446 counts -> 3607 mV)"
+    },
+    {
+        .counts = 9410,
+        .adc_gain = 377,
+        .adc_offset = 46,
+        .expected_mv = 3593,
+        .tolerance_mv = 1,
+        .description = "Actual hardware: Cell 2 session 2 (9410 counts -> 3593 mV)"
+    },
+    {
+        .counts = 9422,
+        .adc_gain = 377,
+        .adc_offset = 46,
+        .expected_mv = 3598,
+        .tolerance_mv = 1,
+        .description = "Actual hardware: Cell 3 session 2 (9422 counts -> 3598 mV)"
+    },
+    {
+        .counts = 9433,
+        .adc_gain = 377,
+        .adc_offset = 46,
+        .expected_mv = 3602,
+        .tolerance_mv = 1,
+        .description = "Actual hardware: Cell 4 session 2 (9433 counts -> 3602 mV)"
+    },
+    {
+        .counts = 9426,
+        .adc_gain = 377,
+        .adc_offset = 46,
+        .expected_mv = 3599,
+        .tolerance_mv = 1,
+        .description = "Actual hardware: Cell 5 session 2 (9426 counts -> 3599 mV)"
     }
 };
 
@@ -173,8 +213,8 @@ int main(void)
         printf("Test %d: %s\n", i + 1, tv->description);
         printf("  Input: counts=%5u, gain=%3u uV/LSB, offset=%4d mV\n",
                tv->counts, tv->adc_gain, tv->adc_offset);
-        printf("  Result: %4u mV, Expected: %4u mV, Diff: %ld mV\n",
-               result, tv->expected_mv, diff);
+        printf("  Result: %4u mV, Expected: %4u mV, Diff: %d mV\n",
+               result, tv->expected_mv, (int)diff);
         
         if (diff <= tv->tolerance_mv)
         {

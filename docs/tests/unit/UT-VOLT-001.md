@@ -9,8 +9,8 @@
 | Test Level | Unit |
 | Priority | High |
 | Status | Pass |
-| Version | 1.0 |
-| Date | 2026-05-15 |
+| Version | 1.1 |
+| Date | 2026-05-19 |
 | Author | Cameron Burnett |
 
 ---
@@ -50,9 +50,14 @@ Those factors are verified in integration tests (TC-INT-VOLT-001) and system tes
 | Nominal 3000 mV | 7863 | 382 | 0 | 3000 | ±5 mV | Integer math rounding |
 | Nominal 4000 mV | 10484 | 382 | 0 | 4000 | ±5 mV | Integer math rounding |
 | Extended range | 13107 | 382 | 0 | 5000 | ±10 mV | Exceeds Li-ion range (testing only) |
-| Hardware Cell 1 | 9459 | 377 | 46 | 3612 | ±1 mV | Actual chip calibration |
-| Hardware Cell 2 | 9423 | 377 | 46 | 3598 | ±1 mV | Actual chip calibration |
-| Hardware Cell 3 | 9434 | 377 | 46 | 3602 | ±1 mV | Actual chip calibration |
+| Hardware Cell 1 | 9459 | 377 | 46 | 3612 | ±1 mV | Session 1 chip calibration |
+| Hardware Cell 2 | 9423 | 377 | 46 | 3598 | ±1 mV | Session 1 chip calibration |
+| Hardware Cell 3 | 9434 | 377 | 46 | 3602 | ±1 mV | Session 1 chip calibration |
+| Hardware Cell 1 S2 | 9446 | 377 | 46 | 3607 | ±1 mV | Session 2 chip calibration |
+| Hardware Cell 2 S2 | 9410 | 377 | 46 | 3593 | ±1 mV | Session 2 chip calibration |
+| Hardware Cell 3 S2 | 9422 | 377 | 46 | 3598 | ±1 mV | Session 2 chip calibration |
+| Hardware Cell 4 S2 | 9433 | 377 | 46 | 3602 | ±1 mV | Session 2 chip calibration |
+| Hardware Cell 5 S2 | 9426 | 377 | 46 | 3599 | ±1 mV | Session 2 chip calibration |
 
 **Tolerance Justification:**
 - **±5 mV for nominal tests:** Accounts for integer math rounding from the formula `(counts × GAIN) / 1000`. The maximum rounding error across the 14-bit ADC range is approximately ±6 mV.
@@ -143,15 +148,8 @@ The small differences in nominal tests (1-4 mV) are due to integer math rounding
 
 | Date | Executed By | Result | Notes |
 |------|-------------|--------|-------|
-| 2026-05-15 | Cameron Burnett | Pass | Zero input: PASS |
-| 2026-05-15 | Cameron Burnett | Pass | 2621 counts: 1001 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | 5242 counts: 2002 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | 7863 counts: 3003 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | 10484 counts: 4004 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | 13107 counts: 5006 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | Cell 1: 3612 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | Cell 2: 3598 mV (PASS) |
-| 2026-05-15 | Cameron Burnett | Pass | Cell 3: 3602 mV (PASS) |
+| 2026-05-15 | Cameron Burnett | Pass | Tests 1–9: 9/9 passed (session 1 hardware vectors, 3 cells) |
+| 2026-05-19 | Cameron Burnett | Pass | Tests 10–14 added: 14/14 passed (session 2 — all 5 cells) |
 
 ## Test Output
 
@@ -165,27 +163,27 @@ Test 1: Zero input test
   Result:    0 mV, Expected:    0 mV, Diff: 0 mV
   Result: PASS
 
-Test 2: Nominal: 2621 counts -> 1000 mV (±5 mV tolerance)
+Test 2: Nominal: 2621 counts -> 1000 mV (+-5 mV tolerance for integer math)
   Input: counts= 2621, gain=382 uV/LSB, offset=   0 mV
   Result: 1001 mV, Expected: 1000 mV, Diff: 1 mV
   Result: PASS
 
-Test 3: Nominal: 5242 counts -> 2000 mV (±5 mV tolerance)
+Test 3: Nominal: 5242 counts -> 2000 mV (+-5 mV tolerance)
   Input: counts= 5242, gain=382 uV/LSB, offset=   0 mV
   Result: 2002 mV, Expected: 2000 mV, Diff: 2 mV
   Result: PASS
 
-Test 4: Nominal: 7863 counts -> 3000 mV (±5 mV tolerance)
+Test 4: Nominal: 7863 counts -> 3000 mV (+-5 mV tolerance)
   Input: counts= 7863, gain=382 uV/LSB, offset=   0 mV
   Result: 3003 mV, Expected: 3000 mV, Diff: 3 mV
   Result: PASS
 
-Test 5: Nominal: 10484 counts -> 4000 mV (±5 mV tolerance)
+Test 5: Nominal: 10484 counts -> 4000 mV (+-5 mV tolerance)
   Input: counts=10484, gain=382 uV/LSB, offset=   0 mV
   Result: 4004 mV, Expected: 4000 mV, Diff: 4 mV
   Result: PASS
 
-Test 6: Nominal: 13107 counts -> 5000 mV (±10 mV tolerance)
+Test 6: Nominal: 13107 counts -> 5000 mV (+-10 mV tolerance, exceeds normal Li-ion range)
   Input: counts=13107, gain=382 uV/LSB, offset=   0 mV
   Result: 5006 mV, Expected: 5000 mV, Diff: 6 mV
   Result: PASS
@@ -205,8 +203,33 @@ Test 9: Actual hardware: Cell 3 (9434 counts -> 3602 mV)
   Result: 3602 mV, Expected: 3602 mV, Diff: 0 mV
   Result: PASS
 
+Test 10: Actual hardware: Cell 1 session 2 (9446 counts -> 3607 mV)
+  Input: counts= 9446, gain=377 uV/LSB, offset=  46 mV
+  Result: 3607 mV, Expected: 3607 mV, Diff: 0 mV
+  Result: PASS
+
+Test 11: Actual hardware: Cell 2 session 2 (9410 counts -> 3593 mV)
+  Input: counts= 9410, gain=377 uV/LSB, offset=  46 mV
+  Result: 3593 mV, Expected: 3593 mV, Diff: 0 mV
+  Result: PASS
+
+Test 12: Actual hardware: Cell 3 session 2 (9422 counts -> 3598 mV)
+  Input: counts= 9422, gain=377 uV/LSB, offset=  46 mV
+  Result: 3598 mV, Expected: 3598 mV, Diff: 0 mV
+  Result: PASS
+
+Test 13: Actual hardware: Cell 4 session 2 (9433 counts -> 3602 mV)
+  Input: counts= 9433, gain=377 uV/LSB, offset=  46 mV
+  Result: 3602 mV, Expected: 3602 mV, Diff: 0 mV
+  Result: PASS
+
+Test 14: Actual hardware: Cell 5 session 2 (9426 counts -> 3599 mV)
+  Input: counts= 9426, gain=377 uV/LSB, offset=  46 mV
+  Result: 3599 mV, Expected: 3599 mV, Diff: 0 mV
+  Result: PASS
+
 --------------------------------------------------
-Test Summary: 9 passed, 0 failed
+Test Summary: 14 passed, 0 failed
 --------------------------------------------------
 ```
 
@@ -214,4 +237,5 @@ Test Summary: 9 passed, 0 failed
 
 | Version | Date | Author | Description |
 |---------|------|--------|-------------|
-| 1.0 | 2026-05-15 | Cameron Burnett | Initial creation - test passed
+| 1.0 | 2026-05-15 | Cameron Burnett | Initial creation — 9 test vectors, 3 hardware cells |
+| 1.1 | 2026-05-19 | Cameron Burnett | Added 5 session 2 hardware vectors (all 5 cells); fixed %ld format warning |
